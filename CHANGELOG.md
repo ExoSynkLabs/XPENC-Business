@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Release process: see [docs/RELEASING.md](docs/RELEASING.md).
 
+## [1.5.0] — 2026-11-03
+
+### Added
+- **Business Books — Tally-style accounting on your phone.** A separate
+  double-entry book for a shop or firm, under More → Business Books, with
+  several companies side by side. Record capital invested, drawings, loans
+  taken / repaid / given / recovered, investments, assets, purchases, sales
+  with GST, returns, expenses and income from plain-language forms — no
+  Dr/Cr knowledge needed. Reports: Day Book, ledger statements, Trial
+  Balance, Profit & Loss, Balance Sheet, Outstanding, GST summary and Stock
+  (valued automatically from items). Day Book exports to CSV.
+- **Bookings, personalised by business type.** Turn on Bookings for a
+  company and pick its type — wedding hall / venue, movie theatre, hotel,
+  salon / clinic, rentals, turf, or your own. Each brings its own words,
+  bookable resources (e.g. Main Hall · Dining Hall · Lawn), sessions or show
+  times and booking-form fields, all editable. See what's free per day,
+  register bookings with guests and requirements, and stop double-bookings
+  (cinema seats sell up to capacity). Advances post as Receipts and the bill
+  as a Sale, so bookings and the books always agree. Share a booking slip.
+
+### Changed
+- Database schema v29 → v31. Backups now include the business books and
+  bookings; older backups still restore.
+
 ## [1.4.2] — 2026-08-13
 
 ### Added
