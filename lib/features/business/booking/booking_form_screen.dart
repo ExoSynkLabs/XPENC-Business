@@ -227,6 +227,7 @@ class _BookingFormState extends ConsumerState<_BookingForm> {
             force: force,
           );
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       messenger.showSnackBar(
         SnackBar(content: Text('Saved BK · ${_name.text.trim()}')),
       );

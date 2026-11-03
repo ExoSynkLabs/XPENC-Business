@@ -385,7 +385,7 @@ class _VoucherFormState extends ConsumerState<_VoucherForm> {
 
     setState(() => _saving = true);
     try {
-      await db.saveBizVoucher(
+      final savedId = await db.saveBizVoucher(
         BizVoucherDraft(
           id: widget.existing?.id,
           companyId: companyId,
@@ -399,9 +399,26 @@ class _VoucherFormState extends ConsumerState<_VoucherForm> {
         ),
       );
       if (!mounted) return;
+      // Feedback you can feel, and a way back to what was just saved.
+      HapticFeedback.mediumImpact();
+      final nav = Navigator.of(context, rootNavigator: true);
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('${_kind.label} saved')));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              '${_kind.label} saved · ${MoneyFormat.symbol(lines.fold(const Money.zero(), (a, l) => a + l.debit))}',
+            ),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => nav.push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VoucherEntryScreen(voucherId: savedId),
+                ),
+              ),
+            ),
+          ),
+        );
       Navigator.pop(context);
     } catch (e) {
       setState(() => _saving = false);

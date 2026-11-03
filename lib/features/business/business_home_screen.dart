@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/money.dart';
@@ -9,7 +10,6 @@ import '../../core/widgets/money_text.dart';
 import '../../data/business_tables.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
-import 'biz_book.dart';
 import 'biz_entry_kinds.dart';
 import 'biz_providers.dart';
 import 'biz_repository.dart';
@@ -17,7 +17,7 @@ import 'biz_widgets.dart';
 import 'day_book_screen.dart';
 import 'items_screen.dart';
 import 'ledgers_screen.dart';
-import 'reports_hub_screen.dart';
+import 'search_screen.dart';
 import 'reports_screens.dart';
 import 'booking/booking_book.dart';
 import 'booking/booking_form_screen.dart';
@@ -112,9 +112,10 @@ class _BusinessDashboard extends ConsumerWidget {
             ),
             actions: [
               IconButton(
-                tooltip: 'Export Day Book (CSV)',
-                icon: const Icon(Icons.ios_share_rounded),
-                onPressed: () => _exportCsv(context, ref, book, period),
+                tooltip: 'Search',
+                icon: const Icon(Icons.search_rounded),
+                onPressed: () =>
+                    pushBizScreen(context, const BizSearchScreen()),
               ),
               IconButton(
                 tooltip: 'Company settings',
@@ -129,13 +130,7 @@ class _BusinessDashboard extends ConsumerWidget {
           body: ListView(
             padding: const EdgeInsets.only(bottom: 104),
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: BizPeriodChip(),
-                ),
-              ),
+              const _Greeting(),
               // ── Hero ──
               Card(
                 margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -189,6 +184,7 @@ class _BusinessDashboard extends ConsumerWidget {
                   ),
                 ),
               ),
+              const _GettingStarted(),
               if (bookingsOn) _BookingsCard(type: type),
               // ── Quick entries ──
               const BizSectionLabel('Quick entry'),
@@ -267,77 +263,74 @@ class _BusinessDashboard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const BizSectionLabel('Capital, loans & assets'),
-              _StatGrid(
-                stats: [
-                  _Stat(
-                    'Capital invested',
-                    capital,
-                    Icons.account_balance_rounded,
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Capital',
-                        groups: [BizGroup.capital, BizGroup.reserves],
-                      ),
+              ..._nonZeroSection('Capital, loans & assets', [
+                _Stat(
+                  'Capital invested',
+                  capital,
+                  Icons.account_balance_rounded,
+                  () => pushBizScreen(
+                    context,
+                    const LedgersScreen(
+                      title: 'Capital',
+                      groups: [BizGroup.capital, BizGroup.reserves],
                     ),
                   ),
-                  _Stat(
-                    'Loans taken',
-                    loansTaken,
-                    Icons.request_quote_outlined,
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Loans taken',
-                        groups: [BizGroup.securedLoans],
-                      ),
+                ),
+                _Stat(
+                  'Loans taken',
+                  loansTaken,
+                  Icons.request_quote_outlined,
+                  () => pushBizScreen(
+                    context,
+                    const LedgersScreen(
+                      title: 'Loans taken',
+                      groups: [BizGroup.securedLoans],
                     ),
                   ),
-                  _Stat(
-                    'Loans given',
-                    loansGiven,
-                    Icons.volunteer_activism_outlined,
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Loans & advances',
-                        groups: [BizGroup.loansAdvances, BizGroup.deposits],
-                      ),
+                ),
+                _Stat(
+                  'Loans given',
+                  loansGiven,
+                  Icons.volunteer_activism_outlined,
+                  () => pushBizScreen(
+                    context,
+                    const LedgersScreen(
+                      title: 'Loans & advances',
+                      groups: [BizGroup.loansAdvances, BizGroup.deposits],
                     ),
                   ),
-                  _Stat(
-                    'Investments',
-                    investments,
-                    Icons.trending_up_rounded,
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Investments',
-                        groups: [BizGroup.investments],
-                      ),
+                ),
+                _Stat(
+                  'Investments',
+                  investments,
+                  Icons.trending_up_rounded,
+                  () => pushBizScreen(
+                    context,
+                    const LedgersScreen(
+                      title: 'Investments',
+                      groups: [BizGroup.investments],
                     ),
                   ),
-                  _Stat(
-                    'Fixed assets',
-                    assets,
-                    Icons.precision_manufacturing_outlined,
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Fixed assets',
-                        groups: [BizGroup.fixedAssets],
-                      ),
+                ),
+                _Stat(
+                  'Fixed assets',
+                  assets,
+                  Icons.precision_manufacturing_outlined,
+                  () => pushBizScreen(
+                    context,
+                    const LedgersScreen(
+                      title: 'Fixed assets',
+                      groups: [BizGroup.fixedAssets],
                     ),
                   ),
-                  _Stat(
-                    'Stock value',
-                    book.stockValue,
-                    Icons.inventory_2_outlined,
-                    () => pushBizScreen(context, const ItemsScreen()),
-                  ),
-                ],
-              ),
+                ),
+                _Stat(
+                  'Stock value',
+                  book.stockValue,
+                  Icons.inventory_2_outlined,
+                  () => pushBizScreen(context, const ItemsScreen()),
+                ),
+              ]),
               BizSectionLabel(
                 'Recent vouchers',
                 trailing: TextButton(
@@ -382,13 +375,6 @@ class _BusinessDashboard extends ConsumerWidget {
       },
     );
   }
-
-  Future<void> _exportCsv(
-    BuildContext context,
-    WidgetRef ref,
-    BizBook book,
-    BizPeriod period,
-  ) => exportDayBookCsv(context, ref, book, period);
 }
 
 Future<void> _showCompanySwitcher(BuildContext context, WidgetRef ref) async {
@@ -470,7 +456,10 @@ class _HeroStat extends StatelessWidget {
               MoneyText(
                 amount,
                 compact: true,
-                color: color,
+                // Colour only when there is something to signal — a zero is neutral.
+                color: amount.isZero
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : color,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -600,6 +589,209 @@ class _StatGrid extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Progressive disclosure: a stat group only earns space once something in
+/// it is non-zero, and then only its non-zero tiles show. A new business sees
+/// the getting-started card instead of six "₹0.00" tiles.
+List<Widget> _nonZeroSection(String title, List<_Stat> stats) {
+  final shown = stats.where((s) => !s.amount.isZero).toList();
+  if (shown.isEmpty) return const [];
+  return [BizSectionLabel(title), _StatGrid(stats: shown)];
+}
+
+/// "Good morning" + today + the report period — orients before the numbers.
+class _Greeting extends ConsumerWidget {
+  const _Greeting();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final hello = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hello,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  DateFormat('EEEE, d MMMM').format(now),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const BizPeriodChip(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Session-only "hide" for the getting-started card.
+final _hideGettingStartedProvider = StateProvider<bool>((ref) => false);
+
+/// Guided onboarding: the handful of first steps that make the books
+/// useful, ticked off automatically as they happen. Disappears when done.
+class _GettingStarted extends ConsumerWidget {
+  const _GettingStarted();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(_hideGettingStartedProvider)) return const SizedBox.shrink();
+    final book = ref.watch(bizBookProvider).valueOrNull;
+    if (book == null) return const SizedBox.shrink();
+    final type = ref.watch(bizBusinessTypeProvider);
+    final bookingsOn = ref.watch(bookingsEnabledProvider);
+    final bookings = ref.watch(bookingBookProvider).valueOrNull;
+    final hasPasscode = ref.watch(hasPasscodeProvider);
+
+    bool usesGroup(BizGroup g) => book.ledgers.any(
+      (l) =>
+          l.ledgerGroup == g &&
+          (!l.openingBalance.isZero ||
+              book.vouchers.any(
+                (v) => book.linesOf(v.id).any((x) => x.ledgerId == l.id),
+              )),
+    );
+    final steps = <(String, String, bool, VoidCallback)>[
+      (
+        'Record the capital you put in',
+        'Where the business money came from',
+        usesGroup(BizGroup.capital),
+        () => openVoucherEntry(context, kind: BizEntryKind.capitalIn),
+      ),
+      (
+        'Add your bank account',
+        'So cash and bank balances are right',
+        book.ledgers.any((l) => l.ledgerGroup == BizGroup.bank),
+        () =>
+            showLedgerForm(context, ref, allowedGroups: const [BizGroup.bank]),
+      ),
+      (
+        'Add a customer or supplier',
+        'Track who owes you, and whom you owe',
+        book.ledgers.any((l) => l.ledgerGroup.isParty),
+        () => showLedgerForm(
+          context,
+          ref,
+          allowedGroups: const [
+            BizGroup.sundryDebtors,
+            BizGroup.sundryCreditors,
+          ],
+        ),
+      ),
+      if (bookingsOn)
+        (
+          'Take your first ${type.bookingNoun.toLowerCase()}',
+          'Block a date for a customer',
+          (bookings?.bookings.isNotEmpty ?? false),
+          () => pushBizScreen(context, const BookingFormScreen()),
+        )
+      else
+        (
+          'Record your first sale',
+          'Cash or credit, with or without GST',
+          book.vouchers.any((v) => v.type == BizVoucherType.sales),
+          () => openVoucherEntry(context, kind: BizEntryKind.sale),
+        ),
+      (
+        'Protect it with a passcode',
+        'Your books stay private on this phone',
+        hasPasscode,
+        () => context.push('/more/settings/passcode'),
+      ),
+    ];
+    final done = steps.where((s) => s.$3).length;
+    if (done == steps.length) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Get started',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$done of ${steps.length}',
+                  style: theme.textTheme.labelMedium,
+                ),
+                IconButton(
+                  tooltip: 'Hide for now',
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () =>
+                      ref.read(_hideGettingStartedProvider.notifier).state =
+                          true,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 6),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: done / steps.length,
+                  minHeight: 6,
+                  backgroundColor: cs.outline.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            for (final (title, hint, isDone, onTap) in steps)
+              ListTile(
+                contentPadding: const EdgeInsets.only(right: 8),
+                dense: true,
+                leading: Icon(
+                  isDone
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: isDone ? AppColors.income : cs.onSurfaceVariant,
+                ),
+                title: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    color: isDone ? cs.onSurfaceVariant : null,
+                  ),
+                ),
+                subtitle: isDone ? null : Text(hint),
+                trailing: isDone
+                    ? null
+                    : const Icon(Icons.chevron_right_rounded),
+                onTap: isDone ? null : onTap,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Release process: see [docs/RELEASING.md](docs/RELEASING.md).
 
+## XPENC Business [1.3.0] — 2026-11-03
+
+### Added
+- **Search everything** from the Home bar — parties and ledgers (name,
+  phone, GSTIN), vouchers (number like SAL/12, reference, narration, exact
+  amount, or the party on them), bookings (customer, phone, BK/3) and items.
+- **Get started** checklist on Home for a new company — capital, bank
+  account, first party, first sale or booking, passcode — ticked off
+  automatically as you go, with a progress bar; hides itself when done.
+- **Amount in words** under every large amount field ("Rupees twelve lakh
+  forty-five thousand only"), the cheque-style check for a slipped zero.
+- **Recently used** ledgers at the top of every ledger picker.
+- A **View** action and haptic feedback when a voucher is saved; haptics
+  when a booking is saved.
+- A greeting and today's date at the top of Home.
+
+### Changed
+- Home hides "Capital, loans & assets" tiles that are zero (and the whole
+  group until one isn't). Zero amounts in the summary card are neutral
+  grey, not green/red. Day Book export moved to the Reports tab.
+
 ## XPENC Business [1.2.0] — 2026-11-03
 
 ### Added

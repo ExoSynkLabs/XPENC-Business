@@ -10,6 +10,7 @@ import '../../core/widgets/money_text.dart';
 import '../../data/business_tables.dart';
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import 'amount_words.dart';
 import 'biz_book.dart';
 import 'biz_providers.dart';
 import 'biz_repository.dart';
@@ -352,7 +353,8 @@ class BizAmountField extends StatelessWidget {
     this.onChanged,
     this.autofocus = false,
     this.large = false,
-  });
+    bool? showWords,
+  }) : showWords = showWords ?? large;
 
   final TextEditingController controller;
   final String label;
@@ -360,8 +362,47 @@ class BizAmountField extends StatelessWidget {
   final bool autofocus;
   final bool large;
 
+  /// Spell the amount out under the field ("Rupees forty-five thousand
+  /// only") — a cheque-style check that catches a slipped zero. On by
+  /// default for the big amount fields.
+  final bool showWords;
+
   @override
   Widget build(BuildContext context) {
+    final field = _field(context);
+    if (!showWords) return field;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        field,
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (context, v, _) {
+            final m = parseMoney(v.text);
+            return AnimatedSize(
+              duration: const Duration(milliseconds: 150),
+              alignment: Alignment.topLeft,
+              child: m.isPositive
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+                      child: Text(
+                        amountInWords(m),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _field(BuildContext context) {
     final theme = Theme.of(context);
     return TextField(
       controller: controller,
@@ -476,6 +517,15 @@ class _LedgerPickerSheetState extends ConsumerState<_LedgerPickerSheet> {
         .where((l) => allowed.isEmpty || allowed.contains(l.ledgerGroup))
         .where((l) => l.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
+    // Recognition over recall: the ledgers this business actually uses come
+    // first, so the common pick is one tap without scrolling or typing.
+    final recent = _query.isEmpty && book != null
+        ? book
+              .recentLedgerIds(groups: allowed, limit: 4)
+              .map((id) => book.ledgerById[id]!)
+              .where((l) => !l.isArchived)
+              .toList()
+        : const <BizLedgerRow>[];
     final order = widget.groups.isEmpty ? BizGroup.values : widget.groups;
     ledgers.sort((a, b) {
       final g = order
@@ -529,8 +579,28 @@ class _LedgerPickerSheetState extends ConsumerState<_LedgerPickerSheet> {
           Expanded(
             child: ListView.builder(
               controller: scroll,
-              itemCount: ledgers.length,
-              itemBuilder: (context, i) {
+              itemCount:
+                  ledgers.length + (recent.isEmpty ? 0 : recent.length + 1),
+              itemBuilder: (context, index) {
+                if (recent.isNotEmpty) {
+                  if (index == 0) return const BizSectionLabel('Recently used');
+                  if (index <= recent.length) {
+                    final l = recent[index - 1];
+                    return ListTile(
+                      leading: const Icon(Icons.history_rounded, size: 20),
+                      title: Text(l.name),
+                      subtitle: Text(l.ledgerGroup.label),
+                      trailing: l.ledgerGroup.isBalanceSheet
+                          ? DrCrText(
+                              book!.balanceOf(l),
+                              style: theme.textTheme.bodySmall,
+                            )
+                          : null,
+                      onTap: () => Navigator.pop(context, l.id),
+                    );
+                  }
+                }
+                final i = index - (recent.isEmpty ? 0 : recent.length + 1);
                 final l = ledgers[i];
                 final showHeader =
                     i == 0 || ledgers[i - 1].ledgerGroup != l.ledgerGroup;

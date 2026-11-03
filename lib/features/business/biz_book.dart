@@ -245,6 +245,22 @@ class BizBook {
 
   String voucherNumberLabel(BizVoucherRow v) => '${v.type.prefix}/${v.number}';
 
+  /// Ledgers used most recently in vouchers, newest first, limited to
+  /// [groups] (empty = any). Feeds the "Recently used" picks.
+  List<int> recentLedgerIds({Set<BizGroup> groups = const {}, int limit = 4}) {
+    final out = <int>[];
+    for (final v in vouchers.reversed) {
+      for (final l in linesOf(v.id)) {
+        final ledger = ledgerById[l.ledgerId];
+        if (ledger == null || out.contains(ledger.id)) continue;
+        if (groups.isNotEmpty && !groups.contains(ledger.ledgerGroup)) continue;
+        out.add(ledger.id);
+        if (out.length == limit) return out;
+      }
+    }
+    return out;
+  }
+
   // ── Balances ──────────────────────────────────────────────────────────────
 
   DrCr _movement(int ledgerId, bool Function(DateTime) include) {
