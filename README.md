@@ -51,6 +51,7 @@ adversarial audit that hardened it — is in [structure.md](structure.md).
 
 | | |
 |---|---|
+| 🏪 **Business Books (Tally-style)** | A separate double-entry book for your shop or firm: record **capital invested, drawings, loans taken/repaid/given, investments, assets, purchases, sales with GST, returns, expenses and income** from plain-language forms — no Dr/Cr knowledge needed. Get **Day Book, Ledgers, Profit & Loss, Balance Sheet, Trial Balance, Outstanding, GST summary and Stock** on your phone, for several companies, with CSV export for your accountant. |
 | 💳 **Honest accounts** | Cash / Bank / Card / Prepaid balance (fob, gift or transit card) with real balances. Debit cards & UPI are *linked instruments* — they spend their bank's money, so rupees are never counted twice. Credit cards carry their own (negative = owed) balance. |
 | 🔁 **Income · Expense · Transfer** | Three transaction types, kept strictly apart. Transfers never pollute budgets or reports. |
 | 🎯 **Budgets** | Per-category with period windows, live progress, once-per-period alerts at 80% and overspend, and a subcategory cap that can never exceed its parent's. |

@@ -541,6 +541,37 @@ Notes on ordering:
 
 ---
 
+## 10.5 Business Books — Tally-style double entry (schema v30)
+
+A separate book-keeping module for a small business, under **More → Business Books**
+(`lib/features/business/`). It shares **nothing** with the personal ledger — a
+business's capital, loans and stock follow double-entry rules the personal
+`Accounts`/`Transactions` model was never built for, and keeping them apart means
+neither can break the other's invariants (§1).
+
+| Concept | Table | Notes |
+|---|---|---|
+| **Company** | `biz_companies` | Several businesses side by side; FY start month (India: April); manual opening/closing stock. Active one = `settings.active_biz_company_id`. |
+| **Ledger** | `biz_ledgers` | Belongs to one fixed **group** (`BizGroup` — Tally's primary groups: Capital, Loans (Liability), Sundry Debtors/Creditors, Duties & Taxes, Fixed Assets, Investments, Bank, Cash, Sales, Purchase, Direct/Indirect Income/Expense…). Opening balance is **signed** (+Dr / −Cr). `system_key` marks the ledgers the app relies on (cash, capital, sales, purchase, gstOut, gstIn). |
+| **Item** | `biz_items` | Stock item; quantities are doubles, money stays paise. |
+| **Voucher** | `biz_vouchers` + `biz_voucher_lines` + `biz_voucher_items` | Tally's 8 types (Sales, Purchase, Receipt, Payment, Contra, Journal, Credit/Debit Note), numbered per type. **Σ debit = Σ credit is enforced** in `saveBizVoucher`. |
+
+**Quick entries** (`BizEntryKind`) turn plain language into vouchers: *Capital invested,
+Drawings, Loan taken / repaid / given / recovered, Investment made / redeemed, Asset
+bought, Sale, Purchase, Sales/Purchase return, Income, Expense, Receive/Make payment,
+Cash ↔ Bank, Journal.* Each kind knows which ledger groups may sit on which side.
+Sales/purchase bills take items or a plain amount plus a GST rate, posted to Output/Input GST.
+
+**Reports are pure Dart** (`BizBook`, no SQL) and unit-tested:
+- Balance-sheet ledgers carry forward (opening + every voucher to date); P&L ledgers reset each period.
+- **Trial Balance** adds Opening Stock, earlier-period P&L and *Difference in opening balances* rows so it always agrees — as Tally does.
+- **Stock valuation:** once a company has items, opening/closing stock come from them automatically (weighted-average cost, at any date); otherwise the user types them.
+- **Balance Sheet** identity: `assets + closing stock = liabilities + P&L to date + opening difference` — tested across financial years.
+
+Backup: all six tables are in `exportAll`/`importAll` (pre-v30 backups simply have none).
+
+---
+
 ## 11.5 Audit — 8 defects found and fixed
 
 An adversarial audit (6 lenses × 3 independent skeptics per finding, skeptics defaulting to

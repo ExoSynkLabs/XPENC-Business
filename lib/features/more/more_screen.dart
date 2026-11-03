@@ -6,6 +6,7 @@ import '../../core/branding/app_info.dart';
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
+import '../business/biz_providers.dart';
 
 /// Hub page. Grouped, not a flat dump. Every tile navigates to a real route.
 class MoreScreen extends ConsumerWidget {
@@ -35,7 +36,19 @@ class MoreScreen extends ConsumerWidget {
         ? 'Automate a fixed expense or income'
         : '$activeRuleCount active';
 
+    final bizCompany = ref.watch(activeBizCompanyProvider).valueOrNull;
+
     final groups = <_Group>[
+      _Group('Business', [
+        _Item(
+          Icons.storefront_outlined,
+          'Business Books',
+          route: '/more/business',
+          subtitle: bizCompany == null
+              ? 'Tally-style accounts: capital, loans, sales, purchase, GST'
+              : '${bizCompany.name} · Day Book, P&L, Balance Sheet',
+        ),
+      ]),
       _Group('Money', [
         _Item(
           Icons.account_balance_wallet_outlined,

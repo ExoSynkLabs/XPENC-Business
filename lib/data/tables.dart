@@ -526,6 +526,11 @@ class Settings extends Table {
   BoolColumn get hideAmounts =>
       boolean().withDefault(const Constant(false))();
 
+  /// The Business Books company currently open (see `business_tables.dart`).
+  /// Deliberately not a foreign key: a restore loads `settings` after the
+  /// business tables, and a stale id simply falls back to the first company.
+  IntColumn get activeBizCompanyId => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

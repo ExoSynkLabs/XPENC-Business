@@ -8,6 +8,7 @@ import '../core/money.dart';
 import '../core/security/passcode.dart';
 import '../features/message_capture/parser/bank_message.dart';
 import '../features/message_capture/parser/message_parser.dart';
+import 'business_tables.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -135,6 +136,12 @@ typedef CombinedStatementLine = ({
     ShoppingItems,
     BackupRecords,
     Allocations,
+    BizCompanies,
+    BizLedgers,
+    BizItems,
+    BizVouchers,
+    BizVoucherLines,
+    BizVoucherItems,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -160,7 +167,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -313,6 +320,17 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 29) {
         await _addColumnIfMissing(m, settings, settings.hideAmounts);
+      }
+      if (from < 30) {
+        // Business Books (Tally-style double entry). `createTable` is
+        // already `IF NOT EXISTS`, so a rolled-back re-run is a no-op.
+        await m.createTable(bizCompanies);
+        await m.createTable(bizLedgers);
+        await m.createTable(bizItems);
+        await m.createTable(bizVouchers);
+        await m.createTable(bizVoucherLines);
+        await m.createTable(bizVoucherItems);
+        await _addColumnIfMissing(m, settings, settings.activeBizCompanyId);
       }
     },
     beforeOpen: (details) async {
@@ -3480,6 +3498,14 @@ class AppDatabase extends _$AppDatabase {
       // and resets the budget-alert dedupe (re-firing alerts already seen).
       'pendingTxns': (await select(pendingTxns).get()).map(m).toList(),
       'budgetAlerts': (await select(budgetAlerts).get()).map(m).toList(),
+      // Business Books — parents before children, the same order
+      // `importAll` loads them in.
+      'bizCompanies': (await select(bizCompanies).get()).map(m).toList(),
+      'bizLedgers': (await select(bizLedgers).get()).map(m).toList(),
+      'bizItems': (await select(bizItems).get()).map(m).toList(),
+      'bizVouchers': (await select(bizVouchers).get()).map(m).toList(),
+      'bizVoucherLines': (await select(bizVoucherLines).get()).map(m).toList(),
+      'bizVoucherItems': (await select(bizVoucherItems).get()).map(m).toList(),
       'settings': (await select(settings).get()).map(m).toList(),
     };
   }
@@ -3549,6 +3575,14 @@ class AppDatabase extends _$AppDatabase {
       // Items reference lists, so they go first.
       await delete(shoppingItems).go();
       await delete(shoppingLists).go();
+      // Business Books: children (lines/items) before vouchers, vouchers
+      // before ledgers/items, all of them before companies.
+      await delete(bizVoucherItems).go();
+      await delete(bizVoucherLines).go();
+      await delete(bizVouchers).go();
+      await delete(bizItems).go();
+      await delete(bizLedgers).go();
+      await delete(bizCompanies).go();
       await delete(settings).go();
 
       Future<void> load<T extends Table, D>(
@@ -3624,6 +3658,14 @@ class AppDatabase extends _$AppDatabase {
       await load(transactionTags, 'transactionTags');
       await load(transactionSplits, 'transactionSplits');
       await load(shoppingItems, 'shoppingItems');
+      // Business Books. A backup from before v30 has none of these keys, so
+      // each `rows()` yields nothing.
+      await load(bizCompanies, 'bizCompanies');
+      await load(bizLedgers, 'bizLedgers');
+      await load(bizItems, 'bizItems');
+      await load(bizVouchers, 'bizVouchers');
+      await load(bizVoucherLines, 'bizVoucherLines');
+      await load(bizVoucherItems, 'bizVoucherItems');
       await load(settings, 'settings');
 
       if (localTheme != null) {
