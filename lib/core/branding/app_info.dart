@@ -10,17 +10,22 @@
 class AppInfo {
   const AppInfo._();
 
-  static const name = 'XPENC';
+  static const name = 'XPENC Business';
+
+  /// The heavy all-caps brand wordmark — the short mark, so it fits wherever
+  /// the logo is drawn.
+  static const shortName = 'XPENC';
   static const tagline = 'Money, tracked honestly.';
 
   /// Shown under the wordmark on the About screen.
   static const description =
-      'Offline-first personal finance. Your ledger, budgets and dues live '
-      'on this device — nothing is ever uploaded.';
+      'Offline-first money app for you and your business: Tally-style books, '
+      'bookings, budgets and dues — all on this device, nothing is ever '
+      'uploaded.';
 
   // ── Version ────────────────────────────────────────────────────────────────
-  static const version = '1.5.0';
-  static const buildNumber = 13;
+  static const version = '1.0.0';
+  static const buildNumber = 1;
 
   /// `1.0.0 (build 1)` — the string a bug report should quote.
   static const versionLabel = '$version (build $buildNumber)';

@@ -42,7 +42,11 @@ android {
         // on it, so it can never be changed after the first upload — and to a
         // device a new applicationId is simply a different app, installed
         // side by side, with its own empty private data directory.
-        applicationId = "com.yash.xpenc"
+        //
+        // XPENC Business is a separate app from the personal XPENC: its own ID,
+        // so both install side by side on one phone. `namespace` (and the
+        // Kotlin package) stay `com.yash.xpenc` — that is code, not identity.
+        applicationId = "com.yash.xpenc.business"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

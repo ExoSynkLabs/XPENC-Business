@@ -183,7 +183,7 @@ class BrandWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      AppInfo.name,
+      AppInfo.shortName,
       style: TextStyle(
         fontSize: fontSize,
         fontWeight: FontWeight.w800,

@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Release process: see [docs/RELEASING.md](docs/RELEASING.md).
 
-## [1.5.0] — 2026-11-03
+## XPENC Business [1.0.0] — 2026-11-03
+
+First release of **XPENC Business** — a separate app (`com.yash.xpenc.business`)
+that installs next to the personal XPENC. It carries everything from XPENC
+1.4.2 below, plus:
 
 ### Added
 - **Business Books — Tally-style accounting on your phone.** A separate
@@ -27,8 +31,11 @@ Release process: see [docs/RELEASING.md](docs/RELEASING.md).
   as a Sale, so bookings and the books always agree. Share a booking slip.
 
 ### Changed
+- Its own app ID, name ("XPENC Business") and version line, starting at
+  1.0.0. It does not touch an installed XPENC's data; to bring personal data
+  over, export a backup from XPENC and restore it here.
 - Database schema v29 → v31. Backups now include the business books and
-  bookings; older backups still restore.
+  bookings; older XPENC backups still restore.
 
 ## [1.4.2] — 2026-08-13
 

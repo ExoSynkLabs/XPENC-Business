@@ -52,6 +52,7 @@ void main() {
 
     expect(kotlin, contains('package com.yash.xpenc'));
     expect(gradle, contains('namespace = "com.yash.xpenc"'));
-    expect(gradle, contains('applicationId = "com.yash.xpenc"'));
+    // XPENC Business ships under its own ID so it installs next to XPENC.
+    expect(gradle, contains('applicationId = "com.yash.xpenc.business"'));
   });
 }

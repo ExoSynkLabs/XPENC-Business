@@ -1,4 +1,4 @@
-# Publishes the app.
+# Publishes XPENC Business.
 #
 # Push a tag like `v1.2.0` and this workflow will:
 #   1. check the tag matches the version in pubspec.yaml
@@ -7,11 +7,11 @@
 #   4. gate every APK through tool/verify_apk.sh (the libsqlite3.so check)
 #   5. publish a GitHub Release with stable asset names + SHA-256 checksums
 #
-# The website's download buttons point at
-#   .../releases/latest/download/xpenc-arm64-v8a.apk
-# so the asset names below must never change.
+# Download links point at
+#   .../releases/latest/download/xpenc-business-arm64-v8a.apk
+# so the asset names below must never change once published.
 
-name: Release APK
+name: Release XPENC Business APK
 
 on:
   push:
@@ -61,15 +61,32 @@ jobs:
       # instead of a conflicting package (see docs/RELEASING.md). Without
       # this, android/app/build.gradle.kts falls back to a fresh random
       # debug key on every CI run.
+      #
+      # When the repository has no ANDROID_KEYSTORE_* secrets yet, the build
+      # falls back to debug signing (see build.gradle.kts) and the release
+      # says so — add the secrets before the release users should keep
+      # updating, or later updates will need an uninstall.
       - name: Configure release signing
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$GITHUB_WORKSPACE/android/xpenc-release.jks"
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::No release keystore secrets — this release is debug-signed."
+            echo "note=⚠️ This build is debug-signed: a future release signed with the permanent key will need an uninstall first (back up before)." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/android/xpenc-release.jks"
           cat > android/key.properties <<EOF
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
           storeFile=$GITHUB_WORKSPACE/android/xpenc-release.jks
           EOF
+          echo "note=" >> "$GITHUB_OUTPUT"
 
       # `--enforce-lockfile` refuses to silently rewrite pubspec.lock if it's
       # out of sync with pubspec.yaml — F-Droid's own reproducible build uses
@@ -91,9 +108,9 @@ jobs:
       - name: Rename to stable asset names
         run: |
           mkdir -p release
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk   release/xpenc-arm64-v8a.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release/xpenc-armeabi-v7a.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk      release/xpenc-x86_64.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk   release/xpenc-business-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release/xpenc-business-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk      release/xpenc-business-x86_64.apk
 
       - name: Verify APKs (libsqlite3.so gate)
         run: |
@@ -108,20 +125,37 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: "XPENC Business ${{ github.ref_name }}"
           files: |
-            release/xpenc-arm64-v8a.apk
-            release/xpenc-armeabi-v7a.apk
-            release/xpenc-x86_64.apk
+            release/xpenc-business-arm64-v8a.apk
+            release/xpenc-business-armeabi-v7a.apk
+            release/xpenc-business-x86_64.apk
             release/SHA256SUMS.txt
+          make_latest: true
           generate_release_notes: true
           body: |
-            **XPENC — Money, tracked honestly.**
+            **XPENC Business — your money and your business, on your phone.**
+
+            A separate app from XPENC (`com.yash.xpenc.business`): it installs next to it and keeps its own data.
+
+            - 🏪 **Business Books** — Tally-style double-entry accounting: capital invested, loans,
+              purchases, sales with GST, expenses, income, investments and assets from plain-language
+              forms. Day Book, Ledgers, Trial Balance, Profit & Loss, Balance Sheet, Outstanding,
+              GST summary and Stock. Several companies; CSV export.
+            - 📅 **Bookings, personalised by business type** — wedding hall / venue, movie theatre,
+              hotel, salon / clinic, rentals, turf or your own: your halls / screens / rooms, sessions
+              or show times and form fields; per-day availability; no double-booking; advances and
+              bills post straight into the books; shareable booking slip.
+            - 💳 Everything from XPENC for personal money — accounts, budgets, persons, reports, backups.
+
+            Find the business features under **More → Business Books**.
 
             | Your phone | Download |
             |---|---|
-            | Most phones (2017+) | `xpenc-arm64-v8a.apk` |
-            | Older 32-bit phones | `xpenc-armeabi-v7a.apk` |
-            | Emulators | `xpenc-x86_64.apk` |
+            | Most phones (2017+) | `xpenc-business-arm64-v8a.apk` |
+            | Older 32-bit phones | `xpenc-business-armeabi-v7a.apk` |
+            | Emulators | `xpenc-business-x86_64.apk` |
 
             Verify your download against `SHA256SUMS.txt`.
-            Full history in [CHANGELOG.md](https://github.com/PATILYASHH/XPENC/blob/master/CHANGELOG.md).
+            ${{ steps.signing.outputs.note }}
+            Full history in [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md).
