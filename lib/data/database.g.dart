@@ -6012,6 +6012,16 @@ class $SettingsTable extends Settings
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _activeBizCompanyIdMeta =
+      const VerificationMeta('activeBizCompanyId');
+  @override
+  late final GeneratedColumn<int> activeBizCompanyId = GeneratedColumn<int>(
+    'active_biz_company_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6042,6 +6052,7 @@ class $SettingsTable extends Settings
     backupRetentionDays,
     preventScreenshots,
     hideAmounts,
+    activeBizCompanyId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6286,6 +6297,15 @@ class $SettingsTable extends Settings
         ),
       );
     }
+    if (data.containsKey('active_biz_company_id')) {
+      context.handle(
+        _activeBizCompanyIdMeta,
+        activeBizCompanyId.isAcceptableOrUnknown(
+          data['active_biz_company_id']!,
+          _activeBizCompanyIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6409,6 +6429,10 @@ class $SettingsTable extends Settings
         DriftSqlType.bool,
         data['${effectivePrefix}hide_amounts'],
       )!,
+      activeBizCompanyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}active_biz_company_id'],
+      ),
     );
   }
 
@@ -6523,6 +6547,11 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
   /// amounts is usually done right before handing the phone to someone, and
   /// should still be hidden the next time the app opens, not reset.
   final bool hideAmounts;
+
+  /// The Business Books company currently open (see `business_tables.dart`).
+  /// Deliberately not a foreign key: a restore loads `settings` after the
+  /// business tables, and a stale id simply falls back to the first company.
+  final int? activeBizCompanyId;
   const SettingRow({
     required this.id,
     required this.currencyCode,
@@ -6552,6 +6581,7 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     required this.backupRetentionDays,
     required this.preventScreenshots,
     required this.hideAmounts,
+    this.activeBizCompanyId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6602,6 +6632,9 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     map['backup_retention_days'] = Variable<int>(backupRetentionDays);
     map['prevent_screenshots'] = Variable<bool>(preventScreenshots);
     map['hide_amounts'] = Variable<bool>(hideAmounts);
+    if (!nullToAbsent || activeBizCompanyId != null) {
+      map['active_biz_company_id'] = Variable<int>(activeBizCompanyId);
+    }
     return map;
   }
 
@@ -6647,6 +6680,9 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
       backupRetentionDays: Value(backupRetentionDays),
       preventScreenshots: Value(preventScreenshots),
       hideAmounts: Value(hideAmounts),
+      activeBizCompanyId: activeBizCompanyId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(activeBizCompanyId),
     );
   }
 
@@ -6709,6 +6745,7 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
       ),
       preventScreenshots: serializer.fromJson<bool>(json['preventScreenshots']),
       hideAmounts: serializer.fromJson<bool>(json['hideAmounts']),
+      activeBizCompanyId: serializer.fromJson<int?>(json['activeBizCompanyId']),
     );
   }
   @override
@@ -6751,6 +6788,7 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
       'backupRetentionDays': serializer.toJson<int>(backupRetentionDays),
       'preventScreenshots': serializer.toJson<bool>(preventScreenshots),
       'hideAmounts': serializer.toJson<bool>(hideAmounts),
+      'activeBizCompanyId': serializer.toJson<int?>(activeBizCompanyId),
     };
   }
 
@@ -6783,6 +6821,7 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     int? backupRetentionDays,
     bool? preventScreenshots,
     bool? hideAmounts,
+    Value<int?> activeBizCompanyId = const Value.absent(),
   }) => SettingRow(
     id: id ?? this.id,
     currencyCode: currencyCode ?? this.currencyCode,
@@ -6823,6 +6862,9 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     backupRetentionDays: backupRetentionDays ?? this.backupRetentionDays,
     preventScreenshots: preventScreenshots ?? this.preventScreenshots,
     hideAmounts: hideAmounts ?? this.hideAmounts,
+    activeBizCompanyId: activeBizCompanyId.present
+        ? activeBizCompanyId.value
+        : this.activeBizCompanyId,
   );
   SettingRow copyWithCompanion(SettingsCompanion data) {
     return SettingRow(
@@ -6904,6 +6946,9 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
       hideAmounts: data.hideAmounts.present
           ? data.hideAmounts.value
           : this.hideAmounts,
+      activeBizCompanyId: data.activeBizCompanyId.present
+          ? data.activeBizCompanyId.value
+          : this.activeBizCompanyId,
     );
   }
 
@@ -6937,7 +6982,8 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
           ..write('lastAutoBackupAt: $lastAutoBackupAt, ')
           ..write('backupRetentionDays: $backupRetentionDays, ')
           ..write('preventScreenshots: $preventScreenshots, ')
-          ..write('hideAmounts: $hideAmounts')
+          ..write('hideAmounts: $hideAmounts, ')
+          ..write('activeBizCompanyId: $activeBizCompanyId')
           ..write(')'))
         .toString();
   }
@@ -6972,6 +7018,7 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
     backupRetentionDays,
     preventScreenshots,
     hideAmounts,
+    activeBizCompanyId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -7005,7 +7052,8 @@ class SettingRow extends DataClass implements Insertable<SettingRow> {
           other.lastAutoBackupAt == this.lastAutoBackupAt &&
           other.backupRetentionDays == this.backupRetentionDays &&
           other.preventScreenshots == this.preventScreenshots &&
-          other.hideAmounts == this.hideAmounts);
+          other.hideAmounts == this.hideAmounts &&
+          other.activeBizCompanyId == this.activeBizCompanyId);
 }
 
 class SettingsCompanion extends UpdateCompanion<SettingRow> {
@@ -7037,6 +7085,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
   final Value<int> backupRetentionDays;
   final Value<bool> preventScreenshots;
   final Value<bool> hideAmounts;
+  final Value<int?> activeBizCompanyId;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.currencyCode = const Value.absent(),
@@ -7066,6 +7115,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     this.backupRetentionDays = const Value.absent(),
     this.preventScreenshots = const Value.absent(),
     this.hideAmounts = const Value.absent(),
+    this.activeBizCompanyId = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -7096,6 +7146,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     this.backupRetentionDays = const Value.absent(),
     this.preventScreenshots = const Value.absent(),
     this.hideAmounts = const Value.absent(),
+    this.activeBizCompanyId = const Value.absent(),
   });
   static Insertable<SettingRow> custom({
     Expression<int>? id,
@@ -7126,6 +7177,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     Expression<int>? backupRetentionDays,
     Expression<bool>? preventScreenshots,
     Expression<bool>? hideAmounts,
+    Expression<int>? activeBizCompanyId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7168,6 +7220,8 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
         'backup_retention_days': backupRetentionDays,
       if (preventScreenshots != null) 'prevent_screenshots': preventScreenshots,
       if (hideAmounts != null) 'hide_amounts': hideAmounts,
+      if (activeBizCompanyId != null)
+        'active_biz_company_id': activeBizCompanyId,
     });
   }
 
@@ -7200,6 +7254,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     Value<int>? backupRetentionDays,
     Value<bool>? preventScreenshots,
     Value<bool>? hideAmounts,
+    Value<int?>? activeBizCompanyId,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -7236,6 +7291,7 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
       backupRetentionDays: backupRetentionDays ?? this.backupRetentionDays,
       preventScreenshots: preventScreenshots ?? this.preventScreenshots,
       hideAmounts: hideAmounts ?? this.hideAmounts,
+      activeBizCompanyId: activeBizCompanyId ?? this.activeBizCompanyId,
     );
   }
 
@@ -7344,6 +7400,9 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
     if (hideAmounts.present) {
       map['hide_amounts'] = Variable<bool>(hideAmounts.value);
     }
+    if (activeBizCompanyId.present) {
+      map['active_biz_company_id'] = Variable<int>(activeBizCompanyId.value);
+    }
     return map;
   }
 
@@ -7377,7 +7436,8 @@ class SettingsCompanion extends UpdateCompanion<SettingRow> {
           ..write('lastAutoBackupAt: $lastAutoBackupAt, ')
           ..write('backupRetentionDays: $backupRetentionDays, ')
           ..write('preventScreenshots: $preventScreenshots, ')
-          ..write('hideAmounts: $hideAmounts')
+          ..write('hideAmounts: $hideAmounts, ')
+          ..write('activeBizCompanyId: $activeBizCompanyId')
           ..write(')'))
         .toString();
   }
@@ -12225,6 +12285,5341 @@ class AllocationsCompanion extends UpdateCompanion<AllocationRow> {
   }
 }
 
+class $BizCompaniesTable extends BizCompanies
+    with TableInfo<$BizCompaniesTable, BizCompanyRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizCompaniesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addressMeta = const VerificationMeta(
+    'address',
+  );
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+    'address',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gstinMeta = const VerificationMeta('gstin');
+  @override
+  late final GeneratedColumn<String> gstin = GeneratedColumn<String>(
+    'gstin',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fyStartMonthMeta = const VerificationMeta(
+    'fyStartMonth',
+  );
+  @override
+  late final GeneratedColumn<int> fyStartMonth = GeneratedColumn<int>(
+    'fy_start_month',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> openingStock =
+      GeneratedColumn<int>(
+        'opening_stock',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizCompaniesTable.$converteropeningStock);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> closingStock =
+      GeneratedColumn<int>(
+        'closing_stock',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizCompaniesTable.$converterclosingStock);
+  static const VerificationMeta _businessTypeMeta = const VerificationMeta(
+    'businessType',
+  );
+  @override
+  late final GeneratedColumn<String> businessType = GeneratedColumn<String>(
+    'business_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('general'),
+  );
+  static const VerificationMeta _bookingsEnabledMeta = const VerificationMeta(
+    'bookingsEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> bookingsEnabled = GeneratedColumn<bool>(
+    'bookings_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("bookings_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _bookingSlotsMeta = const VerificationMeta(
+    'bookingSlots',
+  );
+  @override
+  late final GeneratedColumn<String> bookingSlots = GeneratedColumn<String>(
+    'booking_slots',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bookingFieldsMeta = const VerificationMeta(
+    'bookingFields',
+  );
+  @override
+  late final GeneratedColumn<String> bookingFields = GeneratedColumn<String>(
+    'booking_fields',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    address,
+    phone,
+    gstin,
+    fyStartMonth,
+    openingStock,
+    closingStock,
+    businessType,
+    bookingsEnabled,
+    bookingSlots,
+    bookingFields,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_companies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizCompanyRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('address')) {
+      context.handle(
+        _addressMeta,
+        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
+      );
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('gstin')) {
+      context.handle(
+        _gstinMeta,
+        gstin.isAcceptableOrUnknown(data['gstin']!, _gstinMeta),
+      );
+    }
+    if (data.containsKey('fy_start_month')) {
+      context.handle(
+        _fyStartMonthMeta,
+        fyStartMonth.isAcceptableOrUnknown(
+          data['fy_start_month']!,
+          _fyStartMonthMeta,
+        ),
+      );
+    }
+    if (data.containsKey('business_type')) {
+      context.handle(
+        _businessTypeMeta,
+        businessType.isAcceptableOrUnknown(
+          data['business_type']!,
+          _businessTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bookings_enabled')) {
+      context.handle(
+        _bookingsEnabledMeta,
+        bookingsEnabled.isAcceptableOrUnknown(
+          data['bookings_enabled']!,
+          _bookingsEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('booking_slots')) {
+      context.handle(
+        _bookingSlotsMeta,
+        bookingSlots.isAcceptableOrUnknown(
+          data['booking_slots']!,
+          _bookingSlotsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('booking_fields')) {
+      context.handle(
+        _bookingFieldsMeta,
+        bookingFields.isAcceptableOrUnknown(
+          data['booking_fields']!,
+          _bookingFieldsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizCompanyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizCompanyRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      address: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address'],
+      ),
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      gstin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gstin'],
+      ),
+      fyStartMonth: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fy_start_month'],
+      )!,
+      openingStock: $BizCompaniesTable.$converteropeningStock.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}opening_stock'],
+        )!,
+      ),
+      closingStock: $BizCompaniesTable.$converterclosingStock.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}closing_stock'],
+        )!,
+      ),
+      businessType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}business_type'],
+      )!,
+      bookingsEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}bookings_enabled'],
+      )!,
+      bookingSlots: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}booking_slots'],
+      ),
+      bookingFields: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}booking_fields'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizCompaniesTable createAlias(String alias) {
+    return $BizCompaniesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converteropeningStock =
+      const MoneyConverter();
+  static TypeConverter<Money, int> $converterclosingStock =
+      const MoneyConverter();
+}
+
+class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
+  final int id;
+  final String name;
+  final String? address;
+  final String? phone;
+  final String? gstin;
+
+  /// Month the financial year starts in (1–12). India: April (4).
+  final int fyStartMonth;
+
+  /// Value of stock on hand when the books started (feeds the trading
+  /// account's debit side).
+  final Money openingStock;
+
+  /// Value of stock on hand now (feeds gross profit and the balance sheet).
+  /// Entered by the user, or copied from the stock summary.
+  final Money closingStock;
+
+  /// `BizBusinessType.name` — drives the bookings template and the wording
+  /// across the module (Event / Show / Stay …). Text, not an enum column, so
+  /// a type added later never breaks an older database.
+  final String businessType;
+
+  /// The Bookings module is opt-in per company.
+  final bool bookingsEnabled;
+
+  /// JSON list of slot names ("Morning", "Evening", "Full day", "10:00 AM").
+  final String? bookingSlots;
+
+  /// JSON list of custom booking fields — see `BookingField`.
+  final String? bookingFields;
+  final DateTime createdAt;
+  const BizCompanyRow({
+    required this.id,
+    required this.name,
+    this.address,
+    this.phone,
+    this.gstin,
+    required this.fyStartMonth,
+    required this.openingStock,
+    required this.closingStock,
+    required this.businessType,
+    required this.bookingsEnabled,
+    this.bookingSlots,
+    this.bookingFields,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || gstin != null) {
+      map['gstin'] = Variable<String>(gstin);
+    }
+    map['fy_start_month'] = Variable<int>(fyStartMonth);
+    {
+      map['opening_stock'] = Variable<int>(
+        $BizCompaniesTable.$converteropeningStock.toSql(openingStock),
+      );
+    }
+    {
+      map['closing_stock'] = Variable<int>(
+        $BizCompaniesTable.$converterclosingStock.toSql(closingStock),
+      );
+    }
+    map['business_type'] = Variable<String>(businessType);
+    map['bookings_enabled'] = Variable<bool>(bookingsEnabled);
+    if (!nullToAbsent || bookingSlots != null) {
+      map['booking_slots'] = Variable<String>(bookingSlots);
+    }
+    if (!nullToAbsent || bookingFields != null) {
+      map['booking_fields'] = Variable<String>(bookingFields);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BizCompaniesCompanion toCompanion(bool nullToAbsent) {
+    return BizCompaniesCompanion(
+      id: Value(id),
+      name: Value(name),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      gstin: gstin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gstin),
+      fyStartMonth: Value(fyStartMonth),
+      openingStock: Value(openingStock),
+      closingStock: Value(closingStock),
+      businessType: Value(businessType),
+      bookingsEnabled: Value(bookingsEnabled),
+      bookingSlots: bookingSlots == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingSlots),
+      bookingFields: bookingFields == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingFields),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory BizCompanyRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizCompanyRow(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      address: serializer.fromJson<String?>(json['address']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      gstin: serializer.fromJson<String?>(json['gstin']),
+      fyStartMonth: serializer.fromJson<int>(json['fyStartMonth']),
+      openingStock: serializer.fromJson<Money>(json['openingStock']),
+      closingStock: serializer.fromJson<Money>(json['closingStock']),
+      businessType: serializer.fromJson<String>(json['businessType']),
+      bookingsEnabled: serializer.fromJson<bool>(json['bookingsEnabled']),
+      bookingSlots: serializer.fromJson<String?>(json['bookingSlots']),
+      bookingFields: serializer.fromJson<String?>(json['bookingFields']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'address': serializer.toJson<String?>(address),
+      'phone': serializer.toJson<String?>(phone),
+      'gstin': serializer.toJson<String?>(gstin),
+      'fyStartMonth': serializer.toJson<int>(fyStartMonth),
+      'openingStock': serializer.toJson<Money>(openingStock),
+      'closingStock': serializer.toJson<Money>(closingStock),
+      'businessType': serializer.toJson<String>(businessType),
+      'bookingsEnabled': serializer.toJson<bool>(bookingsEnabled),
+      'bookingSlots': serializer.toJson<String?>(bookingSlots),
+      'bookingFields': serializer.toJson<String?>(bookingFields),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  BizCompanyRow copyWith({
+    int? id,
+    String? name,
+    Value<String?> address = const Value.absent(),
+    Value<String?> phone = const Value.absent(),
+    Value<String?> gstin = const Value.absent(),
+    int? fyStartMonth,
+    Money? openingStock,
+    Money? closingStock,
+    String? businessType,
+    bool? bookingsEnabled,
+    Value<String?> bookingSlots = const Value.absent(),
+    Value<String?> bookingFields = const Value.absent(),
+    DateTime? createdAt,
+  }) => BizCompanyRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    address: address.present ? address.value : this.address,
+    phone: phone.present ? phone.value : this.phone,
+    gstin: gstin.present ? gstin.value : this.gstin,
+    fyStartMonth: fyStartMonth ?? this.fyStartMonth,
+    openingStock: openingStock ?? this.openingStock,
+    closingStock: closingStock ?? this.closingStock,
+    businessType: businessType ?? this.businessType,
+    bookingsEnabled: bookingsEnabled ?? this.bookingsEnabled,
+    bookingSlots: bookingSlots.present ? bookingSlots.value : this.bookingSlots,
+    bookingFields: bookingFields.present
+        ? bookingFields.value
+        : this.bookingFields,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  BizCompanyRow copyWithCompanion(BizCompaniesCompanion data) {
+    return BizCompanyRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      address: data.address.present ? data.address.value : this.address,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      gstin: data.gstin.present ? data.gstin.value : this.gstin,
+      fyStartMonth: data.fyStartMonth.present
+          ? data.fyStartMonth.value
+          : this.fyStartMonth,
+      openingStock: data.openingStock.present
+          ? data.openingStock.value
+          : this.openingStock,
+      closingStock: data.closingStock.present
+          ? data.closingStock.value
+          : this.closingStock,
+      businessType: data.businessType.present
+          ? data.businessType.value
+          : this.businessType,
+      bookingsEnabled: data.bookingsEnabled.present
+          ? data.bookingsEnabled.value
+          : this.bookingsEnabled,
+      bookingSlots: data.bookingSlots.present
+          ? data.bookingSlots.value
+          : this.bookingSlots,
+      bookingFields: data.bookingFields.present
+          ? data.bookingFields.value
+          : this.bookingFields,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizCompanyRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('address: $address, ')
+          ..write('phone: $phone, ')
+          ..write('gstin: $gstin, ')
+          ..write('fyStartMonth: $fyStartMonth, ')
+          ..write('openingStock: $openingStock, ')
+          ..write('closingStock: $closingStock, ')
+          ..write('businessType: $businessType, ')
+          ..write('bookingsEnabled: $bookingsEnabled, ')
+          ..write('bookingSlots: $bookingSlots, ')
+          ..write('bookingFields: $bookingFields, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    address,
+    phone,
+    gstin,
+    fyStartMonth,
+    openingStock,
+    closingStock,
+    businessType,
+    bookingsEnabled,
+    bookingSlots,
+    bookingFields,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizCompanyRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.address == this.address &&
+          other.phone == this.phone &&
+          other.gstin == this.gstin &&
+          other.fyStartMonth == this.fyStartMonth &&
+          other.openingStock == this.openingStock &&
+          other.closingStock == this.closingStock &&
+          other.businessType == this.businessType &&
+          other.bookingsEnabled == this.bookingsEnabled &&
+          other.bookingSlots == this.bookingSlots &&
+          other.bookingFields == this.bookingFields &&
+          other.createdAt == this.createdAt);
+}
+
+class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> address;
+  final Value<String?> phone;
+  final Value<String?> gstin;
+  final Value<int> fyStartMonth;
+  final Value<Money> openingStock;
+  final Value<Money> closingStock;
+  final Value<String> businessType;
+  final Value<bool> bookingsEnabled;
+  final Value<String?> bookingSlots;
+  final Value<String?> bookingFields;
+  final Value<DateTime> createdAt;
+  const BizCompaniesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.address = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.gstin = const Value.absent(),
+    this.fyStartMonth = const Value.absent(),
+    this.openingStock = const Value.absent(),
+    this.closingStock = const Value.absent(),
+    this.businessType = const Value.absent(),
+    this.bookingsEnabled = const Value.absent(),
+    this.bookingSlots = const Value.absent(),
+    this.bookingFields = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BizCompaniesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.address = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.gstin = const Value.absent(),
+    this.fyStartMonth = const Value.absent(),
+    this.openingStock = const Value.absent(),
+    this.closingStock = const Value.absent(),
+    this.businessType = const Value.absent(),
+    this.bookingsEnabled = const Value.absent(),
+    this.bookingSlots = const Value.absent(),
+    this.bookingFields = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<BizCompanyRow> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? address,
+    Expression<String>? phone,
+    Expression<String>? gstin,
+    Expression<int>? fyStartMonth,
+    Expression<int>? openingStock,
+    Expression<int>? closingStock,
+    Expression<String>? businessType,
+    Expression<bool>? bookingsEnabled,
+    Expression<String>? bookingSlots,
+    Expression<String>? bookingFields,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (address != null) 'address': address,
+      if (phone != null) 'phone': phone,
+      if (gstin != null) 'gstin': gstin,
+      if (fyStartMonth != null) 'fy_start_month': fyStartMonth,
+      if (openingStock != null) 'opening_stock': openingStock,
+      if (closingStock != null) 'closing_stock': closingStock,
+      if (businessType != null) 'business_type': businessType,
+      if (bookingsEnabled != null) 'bookings_enabled': bookingsEnabled,
+      if (bookingSlots != null) 'booking_slots': bookingSlots,
+      if (bookingFields != null) 'booking_fields': bookingFields,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BizCompaniesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? address,
+    Value<String?>? phone,
+    Value<String?>? gstin,
+    Value<int>? fyStartMonth,
+    Value<Money>? openingStock,
+    Value<Money>? closingStock,
+    Value<String>? businessType,
+    Value<bool>? bookingsEnabled,
+    Value<String?>? bookingSlots,
+    Value<String?>? bookingFields,
+    Value<DateTime>? createdAt,
+  }) {
+    return BizCompaniesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      gstin: gstin ?? this.gstin,
+      fyStartMonth: fyStartMonth ?? this.fyStartMonth,
+      openingStock: openingStock ?? this.openingStock,
+      closingStock: closingStock ?? this.closingStock,
+      businessType: businessType ?? this.businessType,
+      bookingsEnabled: bookingsEnabled ?? this.bookingsEnabled,
+      bookingSlots: bookingSlots ?? this.bookingSlots,
+      bookingFields: bookingFields ?? this.bookingFields,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (gstin.present) {
+      map['gstin'] = Variable<String>(gstin.value);
+    }
+    if (fyStartMonth.present) {
+      map['fy_start_month'] = Variable<int>(fyStartMonth.value);
+    }
+    if (openingStock.present) {
+      map['opening_stock'] = Variable<int>(
+        $BizCompaniesTable.$converteropeningStock.toSql(openingStock.value),
+      );
+    }
+    if (closingStock.present) {
+      map['closing_stock'] = Variable<int>(
+        $BizCompaniesTable.$converterclosingStock.toSql(closingStock.value),
+      );
+    }
+    if (businessType.present) {
+      map['business_type'] = Variable<String>(businessType.value);
+    }
+    if (bookingsEnabled.present) {
+      map['bookings_enabled'] = Variable<bool>(bookingsEnabled.value);
+    }
+    if (bookingSlots.present) {
+      map['booking_slots'] = Variable<String>(bookingSlots.value);
+    }
+    if (bookingFields.present) {
+      map['booking_fields'] = Variable<String>(bookingFields.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizCompaniesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('address: $address, ')
+          ..write('phone: $phone, ')
+          ..write('gstin: $gstin, ')
+          ..write('fyStartMonth: $fyStartMonth, ')
+          ..write('openingStock: $openingStock, ')
+          ..write('closingStock: $closingStock, ')
+          ..write('businessType: $businessType, ')
+          ..write('bookingsEnabled: $bookingsEnabled, ')
+          ..write('bookingSlots: $bookingSlots, ')
+          ..write('bookingFields: $bookingFields, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizLedgersTable extends BizLedgers
+    with TableInfo<$BizLedgersTable, BizLedgerRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizLedgersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<BizGroup, String> ledgerGroup =
+      GeneratedColumn<String>(
+        'ledger_group',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<BizGroup>($BizLedgersTable.$converterledgerGroup);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> openingBalance =
+      GeneratedColumn<int>(
+        'opening_balance',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizLedgersTable.$converteropeningBalance);
+  static const VerificationMeta _systemKeyMeta = const VerificationMeta(
+    'systemKey',
+  );
+  @override
+  late final GeneratedColumn<String> systemKey = GeneratedColumn<String>(
+    'system_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gstinMeta = const VerificationMeta('gstin');
+  @override
+  late final GeneratedColumn<String> gstin = GeneratedColumn<String>(
+    'gstin',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    name,
+    ledgerGroup,
+    openingBalance,
+    systemKey,
+    phone,
+    gstin,
+    note,
+    isArchived,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_ledgers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizLedgerRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('system_key')) {
+      context.handle(
+        _systemKeyMeta,
+        systemKey.isAcceptableOrUnknown(data['system_key']!, _systemKeyMeta),
+      );
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('gstin')) {
+      context.handle(
+        _gstinMeta,
+        gstin.isAcceptableOrUnknown(data['gstin']!, _gstinMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizLedgerRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizLedgerRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      ledgerGroup: $BizLedgersTable.$converterledgerGroup.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}ledger_group'],
+        )!,
+      ),
+      openingBalance: $BizLedgersTable.$converteropeningBalance.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}opening_balance'],
+        )!,
+      ),
+      systemKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system_key'],
+      ),
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      gstin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gstin'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizLedgersTable createAlias(String alias) {
+    return $BizLedgersTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<BizGroup, String, String> $converterledgerGroup =
+      const EnumNameConverter<BizGroup>(BizGroup.values);
+  static TypeConverter<Money, int> $converteropeningBalance =
+      const MoneyConverter();
+}
+
+class BizLedgerRow extends DataClass implements Insertable<BizLedgerRow> {
+  final int id;
+  final int companyId;
+  final String name;
+  final BizGroup ledgerGroup;
+
+  /// Signed: positive = **Dr**, negative = **Cr**. Only meaningful for
+  /// balance-sheet ledgers (P&L ledgers start every period at zero).
+  final Money openingBalance;
+
+  /// Marks a ledger the app itself relies on (`cash`, `capital`, `sales`,
+  /// `purchase`, `gstOut`, `gstIn`) so it can be found without matching on a
+  /// name the user is free to rename.
+  final String? systemKey;
+  final String? phone;
+  final String? gstin;
+  final String? note;
+  final bool isArchived;
+  final DateTime createdAt;
+  const BizLedgerRow({
+    required this.id,
+    required this.companyId,
+    required this.name,
+    required this.ledgerGroup,
+    required this.openingBalance,
+    this.systemKey,
+    this.phone,
+    this.gstin,
+    this.note,
+    required this.isArchived,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['name'] = Variable<String>(name);
+    {
+      map['ledger_group'] = Variable<String>(
+        $BizLedgersTable.$converterledgerGroup.toSql(ledgerGroup),
+      );
+    }
+    {
+      map['opening_balance'] = Variable<int>(
+        $BizLedgersTable.$converteropeningBalance.toSql(openingBalance),
+      );
+    }
+    if (!nullToAbsent || systemKey != null) {
+      map['system_key'] = Variable<String>(systemKey);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || gstin != null) {
+      map['gstin'] = Variable<String>(gstin);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BizLedgersCompanion toCompanion(bool nullToAbsent) {
+    return BizLedgersCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      name: Value(name),
+      ledgerGroup: Value(ledgerGroup),
+      openingBalance: Value(openingBalance),
+      systemKey: systemKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(systemKey),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      gstin: gstin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gstin),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      isArchived: Value(isArchived),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory BizLedgerRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizLedgerRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      name: serializer.fromJson<String>(json['name']),
+      ledgerGroup: $BizLedgersTable.$converterledgerGroup.fromJson(
+        serializer.fromJson<String>(json['ledgerGroup']),
+      ),
+      openingBalance: serializer.fromJson<Money>(json['openingBalance']),
+      systemKey: serializer.fromJson<String?>(json['systemKey']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      gstin: serializer.fromJson<String?>(json['gstin']),
+      note: serializer.fromJson<String?>(json['note']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'name': serializer.toJson<String>(name),
+      'ledgerGroup': serializer.toJson<String>(
+        $BizLedgersTable.$converterledgerGroup.toJson(ledgerGroup),
+      ),
+      'openingBalance': serializer.toJson<Money>(openingBalance),
+      'systemKey': serializer.toJson<String?>(systemKey),
+      'phone': serializer.toJson<String?>(phone),
+      'gstin': serializer.toJson<String?>(gstin),
+      'note': serializer.toJson<String?>(note),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  BizLedgerRow copyWith({
+    int? id,
+    int? companyId,
+    String? name,
+    BizGroup? ledgerGroup,
+    Money? openingBalance,
+    Value<String?> systemKey = const Value.absent(),
+    Value<String?> phone = const Value.absent(),
+    Value<String?> gstin = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    bool? isArchived,
+    DateTime? createdAt,
+  }) => BizLedgerRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    name: name ?? this.name,
+    ledgerGroup: ledgerGroup ?? this.ledgerGroup,
+    openingBalance: openingBalance ?? this.openingBalance,
+    systemKey: systemKey.present ? systemKey.value : this.systemKey,
+    phone: phone.present ? phone.value : this.phone,
+    gstin: gstin.present ? gstin.value : this.gstin,
+    note: note.present ? note.value : this.note,
+    isArchived: isArchived ?? this.isArchived,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  BizLedgerRow copyWithCompanion(BizLedgersCompanion data) {
+    return BizLedgerRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      name: data.name.present ? data.name.value : this.name,
+      ledgerGroup: data.ledgerGroup.present
+          ? data.ledgerGroup.value
+          : this.ledgerGroup,
+      openingBalance: data.openingBalance.present
+          ? data.openingBalance.value
+          : this.openingBalance,
+      systemKey: data.systemKey.present ? data.systemKey.value : this.systemKey,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      gstin: data.gstin.present ? data.gstin.value : this.gstin,
+      note: data.note.present ? data.note.value : this.note,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizLedgerRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('ledgerGroup: $ledgerGroup, ')
+          ..write('openingBalance: $openingBalance, ')
+          ..write('systemKey: $systemKey, ')
+          ..write('phone: $phone, ')
+          ..write('gstin: $gstin, ')
+          ..write('note: $note, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    name,
+    ledgerGroup,
+    openingBalance,
+    systemKey,
+    phone,
+    gstin,
+    note,
+    isArchived,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizLedgerRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.name == this.name &&
+          other.ledgerGroup == this.ledgerGroup &&
+          other.openingBalance == this.openingBalance &&
+          other.systemKey == this.systemKey &&
+          other.phone == this.phone &&
+          other.gstin == this.gstin &&
+          other.note == this.note &&
+          other.isArchived == this.isArchived &&
+          other.createdAt == this.createdAt);
+}
+
+class BizLedgersCompanion extends UpdateCompanion<BizLedgerRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<String> name;
+  final Value<BizGroup> ledgerGroup;
+  final Value<Money> openingBalance;
+  final Value<String?> systemKey;
+  final Value<String?> phone;
+  final Value<String?> gstin;
+  final Value<String?> note;
+  final Value<bool> isArchived;
+  final Value<DateTime> createdAt;
+  const BizLedgersCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.ledgerGroup = const Value.absent(),
+    this.openingBalance = const Value.absent(),
+    this.systemKey = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.gstin = const Value.absent(),
+    this.note = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BizLedgersCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required String name,
+    required BizGroup ledgerGroup,
+    this.openingBalance = const Value.absent(),
+    this.systemKey = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.gstin = const Value.absent(),
+    this.note = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : companyId = Value(companyId),
+       name = Value(name),
+       ledgerGroup = Value(ledgerGroup);
+  static Insertable<BizLedgerRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<String>? name,
+    Expression<String>? ledgerGroup,
+    Expression<int>? openingBalance,
+    Expression<String>? systemKey,
+    Expression<String>? phone,
+    Expression<String>? gstin,
+    Expression<String>? note,
+    Expression<bool>? isArchived,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (name != null) 'name': name,
+      if (ledgerGroup != null) 'ledger_group': ledgerGroup,
+      if (openingBalance != null) 'opening_balance': openingBalance,
+      if (systemKey != null) 'system_key': systemKey,
+      if (phone != null) 'phone': phone,
+      if (gstin != null) 'gstin': gstin,
+      if (note != null) 'note': note,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BizLedgersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<String>? name,
+    Value<BizGroup>? ledgerGroup,
+    Value<Money>? openingBalance,
+    Value<String?>? systemKey,
+    Value<String?>? phone,
+    Value<String?>? gstin,
+    Value<String?>? note,
+    Value<bool>? isArchived,
+    Value<DateTime>? createdAt,
+  }) {
+    return BizLedgersCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      name: name ?? this.name,
+      ledgerGroup: ledgerGroup ?? this.ledgerGroup,
+      openingBalance: openingBalance ?? this.openingBalance,
+      systemKey: systemKey ?? this.systemKey,
+      phone: phone ?? this.phone,
+      gstin: gstin ?? this.gstin,
+      note: note ?? this.note,
+      isArchived: isArchived ?? this.isArchived,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (ledgerGroup.present) {
+      map['ledger_group'] = Variable<String>(
+        $BizLedgersTable.$converterledgerGroup.toSql(ledgerGroup.value),
+      );
+    }
+    if (openingBalance.present) {
+      map['opening_balance'] = Variable<int>(
+        $BizLedgersTable.$converteropeningBalance.toSql(openingBalance.value),
+      );
+    }
+    if (systemKey.present) {
+      map['system_key'] = Variable<String>(systemKey.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (gstin.present) {
+      map['gstin'] = Variable<String>(gstin.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizLedgersCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('ledgerGroup: $ledgerGroup, ')
+          ..write('openingBalance: $openingBalance, ')
+          ..write('systemKey: $systemKey, ')
+          ..write('phone: $phone, ')
+          ..write('gstin: $gstin, ')
+          ..write('note: $note, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizItemsTable extends BizItems
+    with TableInfo<$BizItemsTable, BizItemRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pcs'),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> salePrice =
+      GeneratedColumn<int>(
+        'sale_price',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizItemsTable.$convertersalePrice);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> purchasePrice =
+      GeneratedColumn<int>(
+        'purchase_price',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizItemsTable.$converterpurchasePrice);
+  static const VerificationMeta _gstRateMeta = const VerificationMeta(
+    'gstRate',
+  );
+  @override
+  late final GeneratedColumn<double> gstRate = GeneratedColumn<double>(
+    'gst_rate',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _openingQtyMeta = const VerificationMeta(
+    'openingQty',
+  );
+  @override
+  late final GeneratedColumn<double> openingQty = GeneratedColumn<double>(
+    'opening_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    name,
+    unit,
+    salePrice,
+    purchasePrice,
+    gstRate,
+    openingQty,
+    isArchived,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizItemRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('gst_rate')) {
+      context.handle(
+        _gstRateMeta,
+        gstRate.isAcceptableOrUnknown(data['gst_rate']!, _gstRateMeta),
+      );
+    }
+    if (data.containsKey('opening_qty')) {
+      context.handle(
+        _openingQtyMeta,
+        openingQty.isAcceptableOrUnknown(data['opening_qty']!, _openingQtyMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizItemRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizItemRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      salePrice: $BizItemsTable.$convertersalePrice.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}sale_price'],
+        )!,
+      ),
+      purchasePrice: $BizItemsTable.$converterpurchasePrice.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}purchase_price'],
+        )!,
+      ),
+      gstRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}gst_rate'],
+      )!,
+      openingQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}opening_qty'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizItemsTable createAlias(String alias) {
+    return $BizItemsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $convertersalePrice = const MoneyConverter();
+  static TypeConverter<Money, int> $converterpurchasePrice =
+      const MoneyConverter();
+}
+
+class BizItemRow extends DataClass implements Insertable<BizItemRow> {
+  final int id;
+  final int companyId;
+  final String name;
+  final String unit;
+  final Money salePrice;
+  final Money purchasePrice;
+  final double gstRate;
+  final double openingQty;
+  final bool isArchived;
+  final DateTime createdAt;
+  const BizItemRow({
+    required this.id,
+    required this.companyId,
+    required this.name,
+    required this.unit,
+    required this.salePrice,
+    required this.purchasePrice,
+    required this.gstRate,
+    required this.openingQty,
+    required this.isArchived,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['name'] = Variable<String>(name);
+    map['unit'] = Variable<String>(unit);
+    {
+      map['sale_price'] = Variable<int>(
+        $BizItemsTable.$convertersalePrice.toSql(salePrice),
+      );
+    }
+    {
+      map['purchase_price'] = Variable<int>(
+        $BizItemsTable.$converterpurchasePrice.toSql(purchasePrice),
+      );
+    }
+    map['gst_rate'] = Variable<double>(gstRate);
+    map['opening_qty'] = Variable<double>(openingQty);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BizItemsCompanion toCompanion(bool nullToAbsent) {
+    return BizItemsCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      name: Value(name),
+      unit: Value(unit),
+      salePrice: Value(salePrice),
+      purchasePrice: Value(purchasePrice),
+      gstRate: Value(gstRate),
+      openingQty: Value(openingQty),
+      isArchived: Value(isArchived),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory BizItemRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizItemRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      name: serializer.fromJson<String>(json['name']),
+      unit: serializer.fromJson<String>(json['unit']),
+      salePrice: serializer.fromJson<Money>(json['salePrice']),
+      purchasePrice: serializer.fromJson<Money>(json['purchasePrice']),
+      gstRate: serializer.fromJson<double>(json['gstRate']),
+      openingQty: serializer.fromJson<double>(json['openingQty']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'name': serializer.toJson<String>(name),
+      'unit': serializer.toJson<String>(unit),
+      'salePrice': serializer.toJson<Money>(salePrice),
+      'purchasePrice': serializer.toJson<Money>(purchasePrice),
+      'gstRate': serializer.toJson<double>(gstRate),
+      'openingQty': serializer.toJson<double>(openingQty),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  BizItemRow copyWith({
+    int? id,
+    int? companyId,
+    String? name,
+    String? unit,
+    Money? salePrice,
+    Money? purchasePrice,
+    double? gstRate,
+    double? openingQty,
+    bool? isArchived,
+    DateTime? createdAt,
+  }) => BizItemRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    name: name ?? this.name,
+    unit: unit ?? this.unit,
+    salePrice: salePrice ?? this.salePrice,
+    purchasePrice: purchasePrice ?? this.purchasePrice,
+    gstRate: gstRate ?? this.gstRate,
+    openingQty: openingQty ?? this.openingQty,
+    isArchived: isArchived ?? this.isArchived,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  BizItemRow copyWithCompanion(BizItemsCompanion data) {
+    return BizItemRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      name: data.name.present ? data.name.value : this.name,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      salePrice: data.salePrice.present ? data.salePrice.value : this.salePrice,
+      purchasePrice: data.purchasePrice.present
+          ? data.purchasePrice.value
+          : this.purchasePrice,
+      gstRate: data.gstRate.present ? data.gstRate.value : this.gstRate,
+      openingQty: data.openingQty.present
+          ? data.openingQty.value
+          : this.openingQty,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizItemRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('unit: $unit, ')
+          ..write('salePrice: $salePrice, ')
+          ..write('purchasePrice: $purchasePrice, ')
+          ..write('gstRate: $gstRate, ')
+          ..write('openingQty: $openingQty, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    name,
+    unit,
+    salePrice,
+    purchasePrice,
+    gstRate,
+    openingQty,
+    isArchived,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizItemRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.name == this.name &&
+          other.unit == this.unit &&
+          other.salePrice == this.salePrice &&
+          other.purchasePrice == this.purchasePrice &&
+          other.gstRate == this.gstRate &&
+          other.openingQty == this.openingQty &&
+          other.isArchived == this.isArchived &&
+          other.createdAt == this.createdAt);
+}
+
+class BizItemsCompanion extends UpdateCompanion<BizItemRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<String> name;
+  final Value<String> unit;
+  final Value<Money> salePrice;
+  final Value<Money> purchasePrice;
+  final Value<double> gstRate;
+  final Value<double> openingQty;
+  final Value<bool> isArchived;
+  final Value<DateTime> createdAt;
+  const BizItemsCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.salePrice = const Value.absent(),
+    this.purchasePrice = const Value.absent(),
+    this.gstRate = const Value.absent(),
+    this.openingQty = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BizItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required String name,
+    this.unit = const Value.absent(),
+    this.salePrice = const Value.absent(),
+    this.purchasePrice = const Value.absent(),
+    this.gstRate = const Value.absent(),
+    this.openingQty = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : companyId = Value(companyId),
+       name = Value(name);
+  static Insertable<BizItemRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<String>? name,
+    Expression<String>? unit,
+    Expression<int>? salePrice,
+    Expression<int>? purchasePrice,
+    Expression<double>? gstRate,
+    Expression<double>? openingQty,
+    Expression<bool>? isArchived,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (name != null) 'name': name,
+      if (unit != null) 'unit': unit,
+      if (salePrice != null) 'sale_price': salePrice,
+      if (purchasePrice != null) 'purchase_price': purchasePrice,
+      if (gstRate != null) 'gst_rate': gstRate,
+      if (openingQty != null) 'opening_qty': openingQty,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BizItemsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<String>? name,
+    Value<String>? unit,
+    Value<Money>? salePrice,
+    Value<Money>? purchasePrice,
+    Value<double>? gstRate,
+    Value<double>? openingQty,
+    Value<bool>? isArchived,
+    Value<DateTime>? createdAt,
+  }) {
+    return BizItemsCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      name: name ?? this.name,
+      unit: unit ?? this.unit,
+      salePrice: salePrice ?? this.salePrice,
+      purchasePrice: purchasePrice ?? this.purchasePrice,
+      gstRate: gstRate ?? this.gstRate,
+      openingQty: openingQty ?? this.openingQty,
+      isArchived: isArchived ?? this.isArchived,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (salePrice.present) {
+      map['sale_price'] = Variable<int>(
+        $BizItemsTable.$convertersalePrice.toSql(salePrice.value),
+      );
+    }
+    if (purchasePrice.present) {
+      map['purchase_price'] = Variable<int>(
+        $BizItemsTable.$converterpurchasePrice.toSql(purchasePrice.value),
+      );
+    }
+    if (gstRate.present) {
+      map['gst_rate'] = Variable<double>(gstRate.value);
+    }
+    if (openingQty.present) {
+      map['opening_qty'] = Variable<double>(openingQty.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('unit: $unit, ')
+          ..write('salePrice: $salePrice, ')
+          ..write('purchasePrice: $purchasePrice, ')
+          ..write('gstRate: $gstRate, ')
+          ..write('openingQty: $openingQty, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizVouchersTable extends BizVouchers
+    with TableInfo<$BizVouchersTable, BizVoucherRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizVouchersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<BizVoucherType, String> type =
+      GeneratedColumn<String>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<BizVoucherType>($BizVouchersTable.$convertertype);
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _narrationMeta = const VerificationMeta(
+    'narration',
+  );
+  @override
+  late final GeneratedColumn<String> narration = GeneratedColumn<String>(
+    'narration',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _referenceMeta = const VerificationMeta(
+    'reference',
+  );
+  @override
+  late final GeneratedColumn<String> reference = GeneratedColumn<String>(
+    'reference',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _entryKindMeta = const VerificationMeta(
+    'entryKind',
+  );
+  @override
+  late final GeneratedColumn<String> entryKind = GeneratedColumn<String>(
+    'entry_kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bookingIdMeta = const VerificationMeta(
+    'bookingId',
+  );
+  @override
+  late final GeneratedColumn<int> bookingId = GeneratedColumn<int>(
+    'booking_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    type,
+    number,
+    date,
+    narration,
+    reference,
+    entryKind,
+    bookingId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_vouchers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizVoucherRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('narration')) {
+      context.handle(
+        _narrationMeta,
+        narration.isAcceptableOrUnknown(data['narration']!, _narrationMeta),
+      );
+    }
+    if (data.containsKey('reference')) {
+      context.handle(
+        _referenceMeta,
+        reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
+      );
+    }
+    if (data.containsKey('entry_kind')) {
+      context.handle(
+        _entryKindMeta,
+        entryKind.isAcceptableOrUnknown(data['entry_kind']!, _entryKindMeta),
+      );
+    }
+    if (data.containsKey('booking_id')) {
+      context.handle(
+        _bookingIdMeta,
+        bookingId.isAcceptableOrUnknown(data['booking_id']!, _bookingIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizVoucherRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizVoucherRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      type: $BizVouchersTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      narration: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}narration'],
+      ),
+      reference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference'],
+      ),
+      entryKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_kind'],
+      ),
+      bookingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}booking_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizVouchersTable createAlias(String alias) {
+    return $BizVouchersTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<BizVoucherType, String, String> $convertertype =
+      const EnumNameConverter<BizVoucherType>(BizVoucherType.values);
+}
+
+class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
+  final int id;
+  final int companyId;
+  final BizVoucherType type;
+
+  /// Running number within (company, type) — "SAL/12".
+  final int number;
+  final DateTime date;
+  final String? narration;
+
+  /// Supplier's bill / customer invoice reference typed by the user.
+  final String? reference;
+
+  /// The quick-entry kind this voucher was made with (`sale`, `loanTaken`,
+  /// ...), so editing reopens the same friendly form. Null = raw journal.
+  final String? entryKind;
+
+  /// The booking this voucher belongs to (an advance received, the final
+  /// bill). Plain int, not a foreign key: deleting a booking keeps its money.
+  final int? bookingId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const BizVoucherRow({
+    required this.id,
+    required this.companyId,
+    required this.type,
+    required this.number,
+    required this.date,
+    this.narration,
+    this.reference,
+    this.entryKind,
+    this.bookingId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    {
+      map['type'] = Variable<String>(
+        $BizVouchersTable.$convertertype.toSql(type),
+      );
+    }
+    map['number'] = Variable<int>(number);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || narration != null) {
+      map['narration'] = Variable<String>(narration);
+    }
+    if (!nullToAbsent || reference != null) {
+      map['reference'] = Variable<String>(reference);
+    }
+    if (!nullToAbsent || entryKind != null) {
+      map['entry_kind'] = Variable<String>(entryKind);
+    }
+    if (!nullToAbsent || bookingId != null) {
+      map['booking_id'] = Variable<int>(bookingId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BizVouchersCompanion toCompanion(bool nullToAbsent) {
+    return BizVouchersCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      type: Value(type),
+      number: Value(number),
+      date: Value(date),
+      narration: narration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(narration),
+      reference: reference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reference),
+      entryKind: entryKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entryKind),
+      bookingId: bookingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BizVoucherRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizVoucherRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      type: $BizVouchersTable.$convertertype.fromJson(
+        serializer.fromJson<String>(json['type']),
+      ),
+      number: serializer.fromJson<int>(json['number']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      narration: serializer.fromJson<String?>(json['narration']),
+      reference: serializer.fromJson<String?>(json['reference']),
+      entryKind: serializer.fromJson<String?>(json['entryKind']),
+      bookingId: serializer.fromJson<int?>(json['bookingId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'type': serializer.toJson<String>(
+        $BizVouchersTable.$convertertype.toJson(type),
+      ),
+      'number': serializer.toJson<int>(number),
+      'date': serializer.toJson<DateTime>(date),
+      'narration': serializer.toJson<String?>(narration),
+      'reference': serializer.toJson<String?>(reference),
+      'entryKind': serializer.toJson<String?>(entryKind),
+      'bookingId': serializer.toJson<int?>(bookingId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BizVoucherRow copyWith({
+    int? id,
+    int? companyId,
+    BizVoucherType? type,
+    int? number,
+    DateTime? date,
+    Value<String?> narration = const Value.absent(),
+    Value<String?> reference = const Value.absent(),
+    Value<String?> entryKind = const Value.absent(),
+    Value<int?> bookingId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => BizVoucherRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    type: type ?? this.type,
+    number: number ?? this.number,
+    date: date ?? this.date,
+    narration: narration.present ? narration.value : this.narration,
+    reference: reference.present ? reference.value : this.reference,
+    entryKind: entryKind.present ? entryKind.value : this.entryKind,
+    bookingId: bookingId.present ? bookingId.value : this.bookingId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BizVoucherRow copyWithCompanion(BizVouchersCompanion data) {
+    return BizVoucherRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      type: data.type.present ? data.type.value : this.type,
+      number: data.number.present ? data.number.value : this.number,
+      date: data.date.present ? data.date.value : this.date,
+      narration: data.narration.present ? data.narration.value : this.narration,
+      reference: data.reference.present ? data.reference.value : this.reference,
+      entryKind: data.entryKind.present ? data.entryKind.value : this.entryKind,
+      bookingId: data.bookingId.present ? data.bookingId.value : this.bookingId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVoucherRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('type: $type, ')
+          ..write('number: $number, ')
+          ..write('date: $date, ')
+          ..write('narration: $narration, ')
+          ..write('reference: $reference, ')
+          ..write('entryKind: $entryKind, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    type,
+    number,
+    date,
+    narration,
+    reference,
+    entryKind,
+    bookingId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizVoucherRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.type == this.type &&
+          other.number == this.number &&
+          other.date == this.date &&
+          other.narration == this.narration &&
+          other.reference == this.reference &&
+          other.entryKind == this.entryKind &&
+          other.bookingId == this.bookingId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<BizVoucherType> type;
+  final Value<int> number;
+  final Value<DateTime> date;
+  final Value<String?> narration;
+  final Value<String?> reference;
+  final Value<String?> entryKind;
+  final Value<int?> bookingId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const BizVouchersCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.number = const Value.absent(),
+    this.date = const Value.absent(),
+    this.narration = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.entryKind = const Value.absent(),
+    this.bookingId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  BizVouchersCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required BizVoucherType type,
+    required int number,
+    required DateTime date,
+    this.narration = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.entryKind = const Value.absent(),
+    this.bookingId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : companyId = Value(companyId),
+       type = Value(type),
+       number = Value(number),
+       date = Value(date);
+  static Insertable<BizVoucherRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<String>? type,
+    Expression<int>? number,
+    Expression<DateTime>? date,
+    Expression<String>? narration,
+    Expression<String>? reference,
+    Expression<String>? entryKind,
+    Expression<int>? bookingId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (type != null) 'type': type,
+      if (number != null) 'number': number,
+      if (date != null) 'date': date,
+      if (narration != null) 'narration': narration,
+      if (reference != null) 'reference': reference,
+      if (entryKind != null) 'entry_kind': entryKind,
+      if (bookingId != null) 'booking_id': bookingId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  BizVouchersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<BizVoucherType>? type,
+    Value<int>? number,
+    Value<DateTime>? date,
+    Value<String?>? narration,
+    Value<String?>? reference,
+    Value<String?>? entryKind,
+    Value<int?>? bookingId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return BizVouchersCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      type: type ?? this.type,
+      number: number ?? this.number,
+      date: date ?? this.date,
+      narration: narration ?? this.narration,
+      reference: reference ?? this.reference,
+      entryKind: entryKind ?? this.entryKind,
+      bookingId: bookingId ?? this.bookingId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(
+        $BizVouchersTable.$convertertype.toSql(type.value),
+      );
+    }
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (narration.present) {
+      map['narration'] = Variable<String>(narration.value);
+    }
+    if (reference.present) {
+      map['reference'] = Variable<String>(reference.value);
+    }
+    if (entryKind.present) {
+      map['entry_kind'] = Variable<String>(entryKind.value);
+    }
+    if (bookingId.present) {
+      map['booking_id'] = Variable<int>(bookingId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVouchersCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('type: $type, ')
+          ..write('number: $number, ')
+          ..write('date: $date, ')
+          ..write('narration: $narration, ')
+          ..write('reference: $reference, ')
+          ..write('entryKind: $entryKind, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizVoucherLinesTable extends BizVoucherLines
+    with TableInfo<$BizVoucherLinesTable, BizVoucherLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizVoucherLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _voucherIdMeta = const VerificationMeta(
+    'voucherId',
+  );
+  @override
+  late final GeneratedColumn<int> voucherId = GeneratedColumn<int>(
+    'voucher_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_vouchers (id)',
+    ),
+  );
+  static const VerificationMeta _ledgerIdMeta = const VerificationMeta(
+    'ledgerId',
+  );
+  @override
+  late final GeneratedColumn<int> ledgerId = GeneratedColumn<int>(
+    'ledger_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_ledgers (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> debit =
+      GeneratedColumn<int>(
+        'debit',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizVoucherLinesTable.$converterdebit);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> credit =
+      GeneratedColumn<int>(
+        'credit',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizVoucherLinesTable.$convertercredit);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    voucherId,
+    ledgerId,
+    debit,
+    credit,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_voucher_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizVoucherLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('voucher_id')) {
+      context.handle(
+        _voucherIdMeta,
+        voucherId.isAcceptableOrUnknown(data['voucher_id']!, _voucherIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_voucherIdMeta);
+    }
+    if (data.containsKey('ledger_id')) {
+      context.handle(
+        _ledgerIdMeta,
+        ledgerId.isAcceptableOrUnknown(data['ledger_id']!, _ledgerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ledgerIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizVoucherLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizVoucherLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      voucherId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}voucher_id'],
+      )!,
+      ledgerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ledger_id'],
+      )!,
+      debit: $BizVoucherLinesTable.$converterdebit.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}debit'],
+        )!,
+      ),
+      credit: $BizVoucherLinesTable.$convertercredit.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}credit'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $BizVoucherLinesTable createAlias(String alias) {
+    return $BizVoucherLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterdebit = const MoneyConverter();
+  static TypeConverter<Money, int> $convertercredit = const MoneyConverter();
+}
+
+class BizVoucherLineRow extends DataClass
+    implements Insertable<BizVoucherLineRow> {
+  final int id;
+  final int voucherId;
+  final int ledgerId;
+  final Money debit;
+  final Money credit;
+  const BizVoucherLineRow({
+    required this.id,
+    required this.voucherId,
+    required this.ledgerId,
+    required this.debit,
+    required this.credit,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['voucher_id'] = Variable<int>(voucherId);
+    map['ledger_id'] = Variable<int>(ledgerId);
+    {
+      map['debit'] = Variable<int>(
+        $BizVoucherLinesTable.$converterdebit.toSql(debit),
+      );
+    }
+    {
+      map['credit'] = Variable<int>(
+        $BizVoucherLinesTable.$convertercredit.toSql(credit),
+      );
+    }
+    return map;
+  }
+
+  BizVoucherLinesCompanion toCompanion(bool nullToAbsent) {
+    return BizVoucherLinesCompanion(
+      id: Value(id),
+      voucherId: Value(voucherId),
+      ledgerId: Value(ledgerId),
+      debit: Value(debit),
+      credit: Value(credit),
+    );
+  }
+
+  factory BizVoucherLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizVoucherLineRow(
+      id: serializer.fromJson<int>(json['id']),
+      voucherId: serializer.fromJson<int>(json['voucherId']),
+      ledgerId: serializer.fromJson<int>(json['ledgerId']),
+      debit: serializer.fromJson<Money>(json['debit']),
+      credit: serializer.fromJson<Money>(json['credit']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'voucherId': serializer.toJson<int>(voucherId),
+      'ledgerId': serializer.toJson<int>(ledgerId),
+      'debit': serializer.toJson<Money>(debit),
+      'credit': serializer.toJson<Money>(credit),
+    };
+  }
+
+  BizVoucherLineRow copyWith({
+    int? id,
+    int? voucherId,
+    int? ledgerId,
+    Money? debit,
+    Money? credit,
+  }) => BizVoucherLineRow(
+    id: id ?? this.id,
+    voucherId: voucherId ?? this.voucherId,
+    ledgerId: ledgerId ?? this.ledgerId,
+    debit: debit ?? this.debit,
+    credit: credit ?? this.credit,
+  );
+  BizVoucherLineRow copyWithCompanion(BizVoucherLinesCompanion data) {
+    return BizVoucherLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      voucherId: data.voucherId.present ? data.voucherId.value : this.voucherId,
+      ledgerId: data.ledgerId.present ? data.ledgerId.value : this.ledgerId,
+      debit: data.debit.present ? data.debit.value : this.debit,
+      credit: data.credit.present ? data.credit.value : this.credit,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVoucherLineRow(')
+          ..write('id: $id, ')
+          ..write('voucherId: $voucherId, ')
+          ..write('ledgerId: $ledgerId, ')
+          ..write('debit: $debit, ')
+          ..write('credit: $credit')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, voucherId, ledgerId, debit, credit);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizVoucherLineRow &&
+          other.id == this.id &&
+          other.voucherId == this.voucherId &&
+          other.ledgerId == this.ledgerId &&
+          other.debit == this.debit &&
+          other.credit == this.credit);
+}
+
+class BizVoucherLinesCompanion extends UpdateCompanion<BizVoucherLineRow> {
+  final Value<int> id;
+  final Value<int> voucherId;
+  final Value<int> ledgerId;
+  final Value<Money> debit;
+  final Value<Money> credit;
+  const BizVoucherLinesCompanion({
+    this.id = const Value.absent(),
+    this.voucherId = const Value.absent(),
+    this.ledgerId = const Value.absent(),
+    this.debit = const Value.absent(),
+    this.credit = const Value.absent(),
+  });
+  BizVoucherLinesCompanion.insert({
+    this.id = const Value.absent(),
+    required int voucherId,
+    required int ledgerId,
+    this.debit = const Value.absent(),
+    this.credit = const Value.absent(),
+  }) : voucherId = Value(voucherId),
+       ledgerId = Value(ledgerId);
+  static Insertable<BizVoucherLineRow> custom({
+    Expression<int>? id,
+    Expression<int>? voucherId,
+    Expression<int>? ledgerId,
+    Expression<int>? debit,
+    Expression<int>? credit,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (voucherId != null) 'voucher_id': voucherId,
+      if (ledgerId != null) 'ledger_id': ledgerId,
+      if (debit != null) 'debit': debit,
+      if (credit != null) 'credit': credit,
+    });
+  }
+
+  BizVoucherLinesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? voucherId,
+    Value<int>? ledgerId,
+    Value<Money>? debit,
+    Value<Money>? credit,
+  }) {
+    return BizVoucherLinesCompanion(
+      id: id ?? this.id,
+      voucherId: voucherId ?? this.voucherId,
+      ledgerId: ledgerId ?? this.ledgerId,
+      debit: debit ?? this.debit,
+      credit: credit ?? this.credit,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (voucherId.present) {
+      map['voucher_id'] = Variable<int>(voucherId.value);
+    }
+    if (ledgerId.present) {
+      map['ledger_id'] = Variable<int>(ledgerId.value);
+    }
+    if (debit.present) {
+      map['debit'] = Variable<int>(
+        $BizVoucherLinesTable.$converterdebit.toSql(debit.value),
+      );
+    }
+    if (credit.present) {
+      map['credit'] = Variable<int>(
+        $BizVoucherLinesTable.$convertercredit.toSql(credit.value),
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVoucherLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('voucherId: $voucherId, ')
+          ..write('ledgerId: $ledgerId, ')
+          ..write('debit: $debit, ')
+          ..write('credit: $credit')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizVoucherItemsTable extends BizVoucherItems
+    with TableInfo<$BizVoucherItemsTable, BizVoucherItemRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizVoucherItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _voucherIdMeta = const VerificationMeta(
+    'voucherId',
+  );
+  @override
+  late final GeneratedColumn<int> voucherId = GeneratedColumn<int>(
+    'voucher_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_vouchers (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<int> itemId = GeneratedColumn<int>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_items (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<double> qty = GeneratedColumn<double>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> rate =
+      GeneratedColumn<int>(
+        'rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<Money>($BizVoucherItemsTable.$converterrate);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> amount =
+      GeneratedColumn<int>(
+        'amount',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      ).withConverter<Money>($BizVoucherItemsTable.$converteramount);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    voucherId,
+    itemId,
+    qty,
+    rate,
+    amount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_voucher_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizVoucherItemRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('voucher_id')) {
+      context.handle(
+        _voucherIdMeta,
+        voucherId.isAcceptableOrUnknown(data['voucher_id']!, _voucherIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_voucherIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_qtyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizVoucherItemRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizVoucherItemRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      voucherId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}voucher_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_id'],
+      )!,
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}qty'],
+      )!,
+      rate: $BizVoucherItemsTable.$converterrate.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}rate'],
+        )!,
+      ),
+      amount: $BizVoucherItemsTable.$converteramount.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}amount'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $BizVoucherItemsTable createAlias(String alias) {
+    return $BizVoucherItemsTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterrate = const MoneyConverter();
+  static TypeConverter<Money, int> $converteramount = const MoneyConverter();
+}
+
+class BizVoucherItemRow extends DataClass
+    implements Insertable<BizVoucherItemRow> {
+  final int id;
+  final int voucherId;
+  final int itemId;
+  final double qty;
+  final Money rate;
+  final Money amount;
+  const BizVoucherItemRow({
+    required this.id,
+    required this.voucherId,
+    required this.itemId,
+    required this.qty,
+    required this.rate,
+    required this.amount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['voucher_id'] = Variable<int>(voucherId);
+    map['item_id'] = Variable<int>(itemId);
+    map['qty'] = Variable<double>(qty);
+    {
+      map['rate'] = Variable<int>(
+        $BizVoucherItemsTable.$converterrate.toSql(rate),
+      );
+    }
+    {
+      map['amount'] = Variable<int>(
+        $BizVoucherItemsTable.$converteramount.toSql(amount),
+      );
+    }
+    return map;
+  }
+
+  BizVoucherItemsCompanion toCompanion(bool nullToAbsent) {
+    return BizVoucherItemsCompanion(
+      id: Value(id),
+      voucherId: Value(voucherId),
+      itemId: Value(itemId),
+      qty: Value(qty),
+      rate: Value(rate),
+      amount: Value(amount),
+    );
+  }
+
+  factory BizVoucherItemRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizVoucherItemRow(
+      id: serializer.fromJson<int>(json['id']),
+      voucherId: serializer.fromJson<int>(json['voucherId']),
+      itemId: serializer.fromJson<int>(json['itemId']),
+      qty: serializer.fromJson<double>(json['qty']),
+      rate: serializer.fromJson<Money>(json['rate']),
+      amount: serializer.fromJson<Money>(json['amount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'voucherId': serializer.toJson<int>(voucherId),
+      'itemId': serializer.toJson<int>(itemId),
+      'qty': serializer.toJson<double>(qty),
+      'rate': serializer.toJson<Money>(rate),
+      'amount': serializer.toJson<Money>(amount),
+    };
+  }
+
+  BizVoucherItemRow copyWith({
+    int? id,
+    int? voucherId,
+    int? itemId,
+    double? qty,
+    Money? rate,
+    Money? amount,
+  }) => BizVoucherItemRow(
+    id: id ?? this.id,
+    voucherId: voucherId ?? this.voucherId,
+    itemId: itemId ?? this.itemId,
+    qty: qty ?? this.qty,
+    rate: rate ?? this.rate,
+    amount: amount ?? this.amount,
+  );
+  BizVoucherItemRow copyWithCompanion(BizVoucherItemsCompanion data) {
+    return BizVoucherItemRow(
+      id: data.id.present ? data.id.value : this.id,
+      voucherId: data.voucherId.present ? data.voucherId.value : this.voucherId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVoucherItemRow(')
+          ..write('id: $id, ')
+          ..write('voucherId: $voucherId, ')
+          ..write('itemId: $itemId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, voucherId, itemId, qty, rate, amount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizVoucherItemRow &&
+          other.id == this.id &&
+          other.voucherId == this.voucherId &&
+          other.itemId == this.itemId &&
+          other.qty == this.qty &&
+          other.rate == this.rate &&
+          other.amount == this.amount);
+}
+
+class BizVoucherItemsCompanion extends UpdateCompanion<BizVoucherItemRow> {
+  final Value<int> id;
+  final Value<int> voucherId;
+  final Value<int> itemId;
+  final Value<double> qty;
+  final Value<Money> rate;
+  final Value<Money> amount;
+  const BizVoucherItemsCompanion({
+    this.id = const Value.absent(),
+    this.voucherId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+  });
+  BizVoucherItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required int voucherId,
+    required int itemId,
+    required double qty,
+    required Money rate,
+    required Money amount,
+  }) : voucherId = Value(voucherId),
+       itemId = Value(itemId),
+       qty = Value(qty),
+       rate = Value(rate),
+       amount = Value(amount);
+  static Insertable<BizVoucherItemRow> custom({
+    Expression<int>? id,
+    Expression<int>? voucherId,
+    Expression<int>? itemId,
+    Expression<double>? qty,
+    Expression<int>? rate,
+    Expression<int>? amount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (voucherId != null) 'voucher_id': voucherId,
+      if (itemId != null) 'item_id': itemId,
+      if (qty != null) 'qty': qty,
+      if (rate != null) 'rate': rate,
+      if (amount != null) 'amount': amount,
+    });
+  }
+
+  BizVoucherItemsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? voucherId,
+    Value<int>? itemId,
+    Value<double>? qty,
+    Value<Money>? rate,
+    Value<Money>? amount,
+  }) {
+    return BizVoucherItemsCompanion(
+      id: id ?? this.id,
+      voucherId: voucherId ?? this.voucherId,
+      itemId: itemId ?? this.itemId,
+      qty: qty ?? this.qty,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (voucherId.present) {
+      map['voucher_id'] = Variable<int>(voucherId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<int>(itemId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<double>(qty.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<int>(
+        $BizVoucherItemsTable.$converterrate.toSql(rate.value),
+      );
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(
+        $BizVoucherItemsTable.$converteramount.toSql(amount.value),
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizVoucherItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('voucherId: $voucherId, ')
+          ..write('itemId: $itemId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizBookingResourcesTable extends BizBookingResources
+    with TableInfo<$BizBookingResourcesTable, BizBookingResourceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingResourcesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capacityMeta = const VerificationMeta(
+    'capacity',
+  );
+  @override
+  late final GeneratedColumn<int> capacity = GeneratedColumn<int>(
+    'capacity',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sharedMeta = const VerificationMeta('shared');
+  @override
+  late final GeneratedColumn<bool> shared = GeneratedColumn<bool>(
+    'shared',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("shared" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> rate =
+      GeneratedColumn<int>(
+        'rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingResourcesTable.$converterrate);
+  static const VerificationMeta _sortMeta = const VerificationMeta('sort');
+  @override
+  late final GeneratedColumn<int> sort = GeneratedColumn<int>(
+    'sort',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    name,
+    capacity,
+    shared,
+    rate,
+    sort,
+    isArchived,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_booking_resources';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingResourceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('capacity')) {
+      context.handle(
+        _capacityMeta,
+        capacity.isAcceptableOrUnknown(data['capacity']!, _capacityMeta),
+      );
+    }
+    if (data.containsKey('shared')) {
+      context.handle(
+        _sharedMeta,
+        shared.isAcceptableOrUnknown(data['shared']!, _sharedMeta),
+      );
+    }
+    if (data.containsKey('sort')) {
+      context.handle(
+        _sortMeta,
+        sort.isAcceptableOrUnknown(data['sort']!, _sortMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingResourceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingResourceRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      capacity: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}capacity'],
+      )!,
+      shared: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}shared'],
+      )!,
+      rate: $BizBookingResourcesTable.$converterrate.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}rate'],
+        )!,
+      ),
+      sort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+    );
+  }
+
+  @override
+  $BizBookingResourcesTable createAlias(String alias) {
+    return $BizBookingResourcesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterrate = const MoneyConverter();
+}
+
+class BizBookingResourceRow extends DataClass
+    implements Insertable<BizBookingResourceRow> {
+  final int id;
+  final int companyId;
+  final String name;
+
+  /// Exclusive: guests it holds (a warning only). Shared: units on sale.
+  final int capacity;
+  final bool shared;
+
+  /// Default price — per day, per night, per seat or per booking, by type.
+  final Money rate;
+  final int sort;
+  final bool isArchived;
+  const BizBookingResourceRow({
+    required this.id,
+    required this.companyId,
+    required this.name,
+    required this.capacity,
+    required this.shared,
+    required this.rate,
+    required this.sort,
+    required this.isArchived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['name'] = Variable<String>(name);
+    map['capacity'] = Variable<int>(capacity);
+    map['shared'] = Variable<bool>(shared);
+    {
+      map['rate'] = Variable<int>(
+        $BizBookingResourcesTable.$converterrate.toSql(rate),
+      );
+    }
+    map['sort'] = Variable<int>(sort);
+    map['is_archived'] = Variable<bool>(isArchived);
+    return map;
+  }
+
+  BizBookingResourcesCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingResourcesCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      name: Value(name),
+      capacity: Value(capacity),
+      shared: Value(shared),
+      rate: Value(rate),
+      sort: Value(sort),
+      isArchived: Value(isArchived),
+    );
+  }
+
+  factory BizBookingResourceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingResourceRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      name: serializer.fromJson<String>(json['name']),
+      capacity: serializer.fromJson<int>(json['capacity']),
+      shared: serializer.fromJson<bool>(json['shared']),
+      rate: serializer.fromJson<Money>(json['rate']),
+      sort: serializer.fromJson<int>(json['sort']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'name': serializer.toJson<String>(name),
+      'capacity': serializer.toJson<int>(capacity),
+      'shared': serializer.toJson<bool>(shared),
+      'rate': serializer.toJson<Money>(rate),
+      'sort': serializer.toJson<int>(sort),
+      'isArchived': serializer.toJson<bool>(isArchived),
+    };
+  }
+
+  BizBookingResourceRow copyWith({
+    int? id,
+    int? companyId,
+    String? name,
+    int? capacity,
+    bool? shared,
+    Money? rate,
+    int? sort,
+    bool? isArchived,
+  }) => BizBookingResourceRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    name: name ?? this.name,
+    capacity: capacity ?? this.capacity,
+    shared: shared ?? this.shared,
+    rate: rate ?? this.rate,
+    sort: sort ?? this.sort,
+    isArchived: isArchived ?? this.isArchived,
+  );
+  BizBookingResourceRow copyWithCompanion(BizBookingResourcesCompanion data) {
+    return BizBookingResourceRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      name: data.name.present ? data.name.value : this.name,
+      capacity: data.capacity.present ? data.capacity.value : this.capacity,
+      shared: data.shared.present ? data.shared.value : this.shared,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      sort: data.sort.present ? data.sort.value : this.sort,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingResourceRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('capacity: $capacity, ')
+          ..write('shared: $shared, ')
+          ..write('rate: $rate, ')
+          ..write('sort: $sort, ')
+          ..write('isArchived: $isArchived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    name,
+    capacity,
+    shared,
+    rate,
+    sort,
+    isArchived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingResourceRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.name == this.name &&
+          other.capacity == this.capacity &&
+          other.shared == this.shared &&
+          other.rate == this.rate &&
+          other.sort == this.sort &&
+          other.isArchived == this.isArchived);
+}
+
+class BizBookingResourcesCompanion
+    extends UpdateCompanion<BizBookingResourceRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<String> name;
+  final Value<int> capacity;
+  final Value<bool> shared;
+  final Value<Money> rate;
+  final Value<int> sort;
+  final Value<bool> isArchived;
+  const BizBookingResourcesCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.capacity = const Value.absent(),
+    this.shared = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.isArchived = const Value.absent(),
+  });
+  BizBookingResourcesCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required String name,
+    this.capacity = const Value.absent(),
+    this.shared = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.isArchived = const Value.absent(),
+  }) : companyId = Value(companyId),
+       name = Value(name);
+  static Insertable<BizBookingResourceRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<String>? name,
+    Expression<int>? capacity,
+    Expression<bool>? shared,
+    Expression<int>? rate,
+    Expression<int>? sort,
+    Expression<bool>? isArchived,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (name != null) 'name': name,
+      if (capacity != null) 'capacity': capacity,
+      if (shared != null) 'shared': shared,
+      if (rate != null) 'rate': rate,
+      if (sort != null) 'sort': sort,
+      if (isArchived != null) 'is_archived': isArchived,
+    });
+  }
+
+  BizBookingResourcesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<String>? name,
+    Value<int>? capacity,
+    Value<bool>? shared,
+    Value<Money>? rate,
+    Value<int>? sort,
+    Value<bool>? isArchived,
+  }) {
+    return BizBookingResourcesCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      name: name ?? this.name,
+      capacity: capacity ?? this.capacity,
+      shared: shared ?? this.shared,
+      rate: rate ?? this.rate,
+      sort: sort ?? this.sort,
+      isArchived: isArchived ?? this.isArchived,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (capacity.present) {
+      map['capacity'] = Variable<int>(capacity.value);
+    }
+    if (shared.present) {
+      map['shared'] = Variable<bool>(shared.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<int>(
+        $BizBookingResourcesTable.$converterrate.toSql(rate.value),
+      );
+    }
+    if (sort.present) {
+      map['sort'] = Variable<int>(sort.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingResourcesCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('capacity: $capacity, ')
+          ..write('shared: $shared, ')
+          ..write('rate: $rate, ')
+          ..write('sort: $sort, ')
+          ..write('isArchived: $isArchived')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizBookingsTable extends BizBookings
+    with TableInfo<$BizBookingsTable, BizBookingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _customerNameMeta = const VerificationMeta(
+    'customerName',
+  );
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+    'customer_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _slotMeta = const VerificationMeta('slot');
+  @override
+  late final GeneratedColumn<String> slot = GeneratedColumn<String>(
+    'slot',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Full day'),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<BizBookingStatus, String> status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<BizBookingStatus>($BizBookingsTable.$converterstatus);
+  static const VerificationMeta _guestsMeta = const VerificationMeta('guests');
+  @override
+  late final GeneratedColumn<int> guests = GeneratedColumn<int>(
+    'guests',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> totalAmount =
+      GeneratedColumn<int>(
+        'total_amount',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingsTable.$convertertotalAmount);
+  static const VerificationMeta _partyLedgerIdMeta = const VerificationMeta(
+    'partyLedgerId',
+  );
+  @override
+  late final GeneratedColumn<int> partyLedgerId = GeneratedColumn<int>(
+    'party_ledger_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _extraMeta = const VerificationMeta('extra');
+  @override
+  late final GeneratedColumn<String> extra = GeneratedColumn<String>(
+    'extra',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    number,
+    customerName,
+    phone,
+    title,
+    startDate,
+    endDate,
+    slot,
+    status,
+    guests,
+    totalAmount,
+    partyLedgerId,
+    extra,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_bookings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+        _customerNameMeta,
+        customerName.isAcceptableOrUnknown(
+          data['customer_name']!,
+          _customerNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_customerNameMeta);
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endDateMeta);
+    }
+    if (data.containsKey('slot')) {
+      context.handle(
+        _slotMeta,
+        slot.isAcceptableOrUnknown(data['slot']!, _slotMeta),
+      );
+    }
+    if (data.containsKey('guests')) {
+      context.handle(
+        _guestsMeta,
+        guests.isAcceptableOrUnknown(data['guests']!, _guestsMeta),
+      );
+    }
+    if (data.containsKey('party_ledger_id')) {
+      context.handle(
+        _partyLedgerIdMeta,
+        partyLedgerId.isAcceptableOrUnknown(
+          data['party_ledger_id']!,
+          _partyLedgerIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('extra')) {
+      context.handle(
+        _extraMeta,
+        extra.isAcceptableOrUnknown(data['extra']!, _extraMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      customerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_name'],
+      )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      )!,
+      slot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}slot'],
+      )!,
+      status: $BizBookingsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      guests: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guests'],
+      )!,
+      totalAmount: $BizBookingsTable.$convertertotalAmount.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}total_amount'],
+        )!,
+      ),
+      partyLedgerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}party_ledger_id'],
+      ),
+      extra: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extra'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizBookingsTable createAlias(String alias) {
+    return $BizBookingsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<BizBookingStatus, String, String> $converterstatus =
+      const EnumNameConverter<BizBookingStatus>(BizBookingStatus.values);
+  static TypeConverter<Money, int> $convertertotalAmount =
+      const MoneyConverter();
+}
+
+class BizBookingRow extends DataClass implements Insertable<BizBookingRow> {
+  final int id;
+  final int companyId;
+  final int number;
+  final String customerName;
+  final String? phone;
+
+  /// "Sharma–Patil wedding", a movie name, … optional.
+  final String? title;
+  final DateTime startDate;
+
+  /// Same as [startDate] for single-day bookings.
+  final DateTime endDate;
+  final String slot;
+  final BizBookingStatus status;
+
+  /// Expected people / guests / adults.
+  final int guests;
+  final Money totalAmount;
+
+  /// The customer's ledger in the books, created on first payment.
+  final int? partyLedgerId;
+
+  /// Values of the company's custom fields, as a JSON object.
+  final String extra;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const BizBookingRow({
+    required this.id,
+    required this.companyId,
+    required this.number,
+    required this.customerName,
+    this.phone,
+    this.title,
+    required this.startDate,
+    required this.endDate,
+    required this.slot,
+    required this.status,
+    required this.guests,
+    required this.totalAmount,
+    this.partyLedgerId,
+    required this.extra,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['number'] = Variable<int>(number);
+    map['customer_name'] = Variable<String>(customerName);
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['end_date'] = Variable<DateTime>(endDate);
+    map['slot'] = Variable<String>(slot);
+    {
+      map['status'] = Variable<String>(
+        $BizBookingsTable.$converterstatus.toSql(status),
+      );
+    }
+    map['guests'] = Variable<int>(guests);
+    {
+      map['total_amount'] = Variable<int>(
+        $BizBookingsTable.$convertertotalAmount.toSql(totalAmount),
+      );
+    }
+    if (!nullToAbsent || partyLedgerId != null) {
+      map['party_ledger_id'] = Variable<int>(partyLedgerId);
+    }
+    map['extra'] = Variable<String>(extra);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BizBookingsCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingsCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      number: Value(number),
+      customerName: Value(customerName),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      startDate: Value(startDate),
+      endDate: Value(endDate),
+      slot: Value(slot),
+      status: Value(status),
+      guests: Value(guests),
+      totalAmount: Value(totalAmount),
+      partyLedgerId: partyLedgerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(partyLedgerId),
+      extra: Value(extra),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BizBookingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      number: serializer.fromJson<int>(json['number']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      title: serializer.fromJson<String?>(json['title']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime>(json['endDate']),
+      slot: serializer.fromJson<String>(json['slot']),
+      status: $BizBookingsTable.$converterstatus.fromJson(
+        serializer.fromJson<String>(json['status']),
+      ),
+      guests: serializer.fromJson<int>(json['guests']),
+      totalAmount: serializer.fromJson<Money>(json['totalAmount']),
+      partyLedgerId: serializer.fromJson<int?>(json['partyLedgerId']),
+      extra: serializer.fromJson<String>(json['extra']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'number': serializer.toJson<int>(number),
+      'customerName': serializer.toJson<String>(customerName),
+      'phone': serializer.toJson<String?>(phone),
+      'title': serializer.toJson<String?>(title),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime>(endDate),
+      'slot': serializer.toJson<String>(slot),
+      'status': serializer.toJson<String>(
+        $BizBookingsTable.$converterstatus.toJson(status),
+      ),
+      'guests': serializer.toJson<int>(guests),
+      'totalAmount': serializer.toJson<Money>(totalAmount),
+      'partyLedgerId': serializer.toJson<int?>(partyLedgerId),
+      'extra': serializer.toJson<String>(extra),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BizBookingRow copyWith({
+    int? id,
+    int? companyId,
+    int? number,
+    String? customerName,
+    Value<String?> phone = const Value.absent(),
+    Value<String?> title = const Value.absent(),
+    DateTime? startDate,
+    DateTime? endDate,
+    String? slot,
+    BizBookingStatus? status,
+    int? guests,
+    Money? totalAmount,
+    Value<int?> partyLedgerId = const Value.absent(),
+    String? extra,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => BizBookingRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    number: number ?? this.number,
+    customerName: customerName ?? this.customerName,
+    phone: phone.present ? phone.value : this.phone,
+    title: title.present ? title.value : this.title,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate ?? this.endDate,
+    slot: slot ?? this.slot,
+    status: status ?? this.status,
+    guests: guests ?? this.guests,
+    totalAmount: totalAmount ?? this.totalAmount,
+    partyLedgerId: partyLedgerId.present
+        ? partyLedgerId.value
+        : this.partyLedgerId,
+    extra: extra ?? this.extra,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BizBookingRow copyWithCompanion(BizBookingsCompanion data) {
+    return BizBookingRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      number: data.number.present ? data.number.value : this.number,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      title: data.title.present ? data.title.value : this.title,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      slot: data.slot.present ? data.slot.value : this.slot,
+      status: data.status.present ? data.status.value : this.status,
+      guests: data.guests.present ? data.guests.value : this.guests,
+      totalAmount: data.totalAmount.present
+          ? data.totalAmount.value
+          : this.totalAmount,
+      partyLedgerId: data.partyLedgerId.present
+          ? data.partyLedgerId.value
+          : this.partyLedgerId,
+      extra: data.extra.present ? data.extra.value : this.extra,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('number: $number, ')
+          ..write('customerName: $customerName, ')
+          ..write('phone: $phone, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('slot: $slot, ')
+          ..write('status: $status, ')
+          ..write('guests: $guests, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('partyLedgerId: $partyLedgerId, ')
+          ..write('extra: $extra, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    number,
+    customerName,
+    phone,
+    title,
+    startDate,
+    endDate,
+    slot,
+    status,
+    guests,
+    totalAmount,
+    partyLedgerId,
+    extra,
+    notes,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.number == this.number &&
+          other.customerName == this.customerName &&
+          other.phone == this.phone &&
+          other.title == this.title &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.slot == this.slot &&
+          other.status == this.status &&
+          other.guests == this.guests &&
+          other.totalAmount == this.totalAmount &&
+          other.partyLedgerId == this.partyLedgerId &&
+          other.extra == this.extra &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BizBookingsCompanion extends UpdateCompanion<BizBookingRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<int> number;
+  final Value<String> customerName;
+  final Value<String?> phone;
+  final Value<String?> title;
+  final Value<DateTime> startDate;
+  final Value<DateTime> endDate;
+  final Value<String> slot;
+  final Value<BizBookingStatus> status;
+  final Value<int> guests;
+  final Value<Money> totalAmount;
+  final Value<int?> partyLedgerId;
+  final Value<String> extra;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const BizBookingsCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.number = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.title = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.slot = const Value.absent(),
+    this.status = const Value.absent(),
+    this.guests = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.partyLedgerId = const Value.absent(),
+    this.extra = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  BizBookingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required int number,
+    required String customerName,
+    this.phone = const Value.absent(),
+    this.title = const Value.absent(),
+    required DateTime startDate,
+    required DateTime endDate,
+    this.slot = const Value.absent(),
+    required BizBookingStatus status,
+    this.guests = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.partyLedgerId = const Value.absent(),
+    this.extra = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : companyId = Value(companyId),
+       number = Value(number),
+       customerName = Value(customerName),
+       startDate = Value(startDate),
+       endDate = Value(endDate),
+       status = Value(status);
+  static Insertable<BizBookingRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<int>? number,
+    Expression<String>? customerName,
+    Expression<String>? phone,
+    Expression<String>? title,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? slot,
+    Expression<String>? status,
+    Expression<int>? guests,
+    Expression<int>? totalAmount,
+    Expression<int>? partyLedgerId,
+    Expression<String>? extra,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (number != null) 'number': number,
+      if (customerName != null) 'customer_name': customerName,
+      if (phone != null) 'phone': phone,
+      if (title != null) 'title': title,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (slot != null) 'slot': slot,
+      if (status != null) 'status': status,
+      if (guests != null) 'guests': guests,
+      if (totalAmount != null) 'total_amount': totalAmount,
+      if (partyLedgerId != null) 'party_ledger_id': partyLedgerId,
+      if (extra != null) 'extra': extra,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  BizBookingsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<int>? number,
+    Value<String>? customerName,
+    Value<String?>? phone,
+    Value<String?>? title,
+    Value<DateTime>? startDate,
+    Value<DateTime>? endDate,
+    Value<String>? slot,
+    Value<BizBookingStatus>? status,
+    Value<int>? guests,
+    Value<Money>? totalAmount,
+    Value<int?>? partyLedgerId,
+    Value<String>? extra,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return BizBookingsCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      number: number ?? this.number,
+      customerName: customerName ?? this.customerName,
+      phone: phone ?? this.phone,
+      title: title ?? this.title,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      slot: slot ?? this.slot,
+      status: status ?? this.status,
+      guests: guests ?? this.guests,
+      totalAmount: totalAmount ?? this.totalAmount,
+      partyLedgerId: partyLedgerId ?? this.partyLedgerId,
+      extra: extra ?? this.extra,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (slot.present) {
+      map['slot'] = Variable<String>(slot.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $BizBookingsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (guests.present) {
+      map['guests'] = Variable<int>(guests.value);
+    }
+    if (totalAmount.present) {
+      map['total_amount'] = Variable<int>(
+        $BizBookingsTable.$convertertotalAmount.toSql(totalAmount.value),
+      );
+    }
+    if (partyLedgerId.present) {
+      map['party_ledger_id'] = Variable<int>(partyLedgerId.value);
+    }
+    if (extra.present) {
+      map['extra'] = Variable<String>(extra.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingsCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('number: $number, ')
+          ..write('customerName: $customerName, ')
+          ..write('phone: $phone, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('slot: $slot, ')
+          ..write('status: $status, ')
+          ..write('guests: $guests, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('partyLedgerId: $partyLedgerId, ')
+          ..write('extra: $extra, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizBookingLinesTable extends BizBookingLines
+    with TableInfo<$BizBookingLinesTable, BizBookingLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _bookingIdMeta = const VerificationMeta(
+    'bookingId',
+  );
+  @override
+  late final GeneratedColumn<int> bookingId = GeneratedColumn<int>(
+    'booking_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_bookings (id)',
+    ),
+  );
+  static const VerificationMeta _resourceIdMeta = const VerificationMeta(
+    'resourceId',
+  );
+  @override
+  late final GeneratedColumn<int> resourceId = GeneratedColumn<int>(
+    'resource_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_booking_resources (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> rate =
+      GeneratedColumn<int>(
+        'rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingLinesTable.$converterrate);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> amount =
+      GeneratedColumn<int>(
+        'amount',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingLinesTable.$converteramount);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookingId,
+    resourceId,
+    qty,
+    rate,
+    amount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_booking_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('booking_id')) {
+      context.handle(
+        _bookingIdMeta,
+        bookingId.isAcceptableOrUnknown(data['booking_id']!, _bookingIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookingIdMeta);
+    }
+    if (data.containsKey('resource_id')) {
+      context.handle(
+        _resourceIdMeta,
+        resourceId.isAcceptableOrUnknown(data['resource_id']!, _resourceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resourceIdMeta);
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      bookingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}booking_id'],
+      )!,
+      resourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resource_id'],
+      )!,
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      rate: $BizBookingLinesTable.$converterrate.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}rate'],
+        )!,
+      ),
+      amount: $BizBookingLinesTable.$converteramount.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}amount'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $BizBookingLinesTable createAlias(String alias) {
+    return $BizBookingLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterrate = const MoneyConverter();
+  static TypeConverter<Money, int> $converteramount = const MoneyConverter();
+}
+
+class BizBookingLineRow extends DataClass
+    implements Insertable<BizBookingLineRow> {
+  final int id;
+  final int bookingId;
+  final int resourceId;
+  final int qty;
+  final Money rate;
+  final Money amount;
+  const BizBookingLineRow({
+    required this.id,
+    required this.bookingId,
+    required this.resourceId,
+    required this.qty,
+    required this.rate,
+    required this.amount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['booking_id'] = Variable<int>(bookingId);
+    map['resource_id'] = Variable<int>(resourceId);
+    map['qty'] = Variable<int>(qty);
+    {
+      map['rate'] = Variable<int>(
+        $BizBookingLinesTable.$converterrate.toSql(rate),
+      );
+    }
+    {
+      map['amount'] = Variable<int>(
+        $BizBookingLinesTable.$converteramount.toSql(amount),
+      );
+    }
+    return map;
+  }
+
+  BizBookingLinesCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingLinesCompanion(
+      id: Value(id),
+      bookingId: Value(bookingId),
+      resourceId: Value(resourceId),
+      qty: Value(qty),
+      rate: Value(rate),
+      amount: Value(amount),
+    );
+  }
+
+  factory BizBookingLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingLineRow(
+      id: serializer.fromJson<int>(json['id']),
+      bookingId: serializer.fromJson<int>(json['bookingId']),
+      resourceId: serializer.fromJson<int>(json['resourceId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      rate: serializer.fromJson<Money>(json['rate']),
+      amount: serializer.fromJson<Money>(json['amount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'bookingId': serializer.toJson<int>(bookingId),
+      'resourceId': serializer.toJson<int>(resourceId),
+      'qty': serializer.toJson<int>(qty),
+      'rate': serializer.toJson<Money>(rate),
+      'amount': serializer.toJson<Money>(amount),
+    };
+  }
+
+  BizBookingLineRow copyWith({
+    int? id,
+    int? bookingId,
+    int? resourceId,
+    int? qty,
+    Money? rate,
+    Money? amount,
+  }) => BizBookingLineRow(
+    id: id ?? this.id,
+    bookingId: bookingId ?? this.bookingId,
+    resourceId: resourceId ?? this.resourceId,
+    qty: qty ?? this.qty,
+    rate: rate ?? this.rate,
+    amount: amount ?? this.amount,
+  );
+  BizBookingLineRow copyWithCompanion(BizBookingLinesCompanion data) {
+    return BizBookingLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      bookingId: data.bookingId.present ? data.bookingId.value : this.bookingId,
+      resourceId: data.resourceId.present
+          ? data.resourceId.value
+          : this.resourceId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingLineRow(')
+          ..write('id: $id, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('resourceId: $resourceId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, bookingId, resourceId, qty, rate, amount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingLineRow &&
+          other.id == this.id &&
+          other.bookingId == this.bookingId &&
+          other.resourceId == this.resourceId &&
+          other.qty == this.qty &&
+          other.rate == this.rate &&
+          other.amount == this.amount);
+}
+
+class BizBookingLinesCompanion extends UpdateCompanion<BizBookingLineRow> {
+  final Value<int> id;
+  final Value<int> bookingId;
+  final Value<int> resourceId;
+  final Value<int> qty;
+  final Value<Money> rate;
+  final Value<Money> amount;
+  const BizBookingLinesCompanion({
+    this.id = const Value.absent(),
+    this.bookingId = const Value.absent(),
+    this.resourceId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+  });
+  BizBookingLinesCompanion.insert({
+    this.id = const Value.absent(),
+    required int bookingId,
+    required int resourceId,
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+  }) : bookingId = Value(bookingId),
+       resourceId = Value(resourceId);
+  static Insertable<BizBookingLineRow> custom({
+    Expression<int>? id,
+    Expression<int>? bookingId,
+    Expression<int>? resourceId,
+    Expression<int>? qty,
+    Expression<int>? rate,
+    Expression<int>? amount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookingId != null) 'booking_id': bookingId,
+      if (resourceId != null) 'resource_id': resourceId,
+      if (qty != null) 'qty': qty,
+      if (rate != null) 'rate': rate,
+      if (amount != null) 'amount': amount,
+    });
+  }
+
+  BizBookingLinesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? bookingId,
+    Value<int>? resourceId,
+    Value<int>? qty,
+    Value<Money>? rate,
+    Value<Money>? amount,
+  }) {
+    return BizBookingLinesCompanion(
+      id: id ?? this.id,
+      bookingId: bookingId ?? this.bookingId,
+      resourceId: resourceId ?? this.resourceId,
+      qty: qty ?? this.qty,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (bookingId.present) {
+      map['booking_id'] = Variable<int>(bookingId.value);
+    }
+    if (resourceId.present) {
+      map['resource_id'] = Variable<int>(resourceId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<int>(
+        $BizBookingLinesTable.$converterrate.toSql(rate.value),
+      );
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(
+        $BizBookingLinesTable.$converteramount.toSql(amount.value),
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('resourceId: $resourceId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12252,6 +17647,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ShoppingItemsTable shoppingItems = $ShoppingItemsTable(this);
   late final $BackupRecordsTable backupRecords = $BackupRecordsTable(this);
   late final $AllocationsTable allocations = $AllocationsTable(this);
+  late final $BizCompaniesTable bizCompanies = $BizCompaniesTable(this);
+  late final $BizLedgersTable bizLedgers = $BizLedgersTable(this);
+  late final $BizItemsTable bizItems = $BizItemsTable(this);
+  late final $BizVouchersTable bizVouchers = $BizVouchersTable(this);
+  late final $BizVoucherLinesTable bizVoucherLines = $BizVoucherLinesTable(
+    this,
+  );
+  late final $BizVoucherItemsTable bizVoucherItems = $BizVoucherItemsTable(
+    this,
+  );
+  late final $BizBookingResourcesTable bizBookingResources =
+      $BizBookingResourcesTable(this);
+  late final $BizBookingsTable bizBookings = $BizBookingsTable(this);
+  late final $BizBookingLinesTable bizBookingLines = $BizBookingLinesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -12278,6 +17689,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     shoppingItems,
     backupRecords,
     allocations,
+    bizCompanies,
+    bizLedgers,
+    bizItems,
+    bizVouchers,
+    bizVoucherLines,
+    bizVoucherItems,
+    bizBookingResources,
+    bizBookings,
+    bizBookingLines,
   ];
 }
 
@@ -19286,6 +24706,7 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<int> backupRetentionDays,
       Value<bool> preventScreenshots,
       Value<bool> hideAmounts,
+      Value<int?> activeBizCompanyId,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -19317,6 +24738,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<int> backupRetentionDays,
       Value<bool> preventScreenshots,
       Value<bool> hideAmounts,
+      Value<int?> activeBizCompanyId,
     });
 
 final class $$SettingsTableReferences
@@ -19492,6 +24914,11 @@ class $$SettingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get activeBizCompanyId => $composableBuilder(
+    column: $table.activeBizCompanyId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$AccountsTableFilterComposer get quickAddAccountId {
     final $$AccountsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -19660,6 +25087,11 @@ class $$SettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get activeBizCompanyId => $composableBuilder(
+    column: $table.activeBizCompanyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$AccountsTableOrderingComposer get quickAddAccountId {
     final $$AccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -19823,6 +25255,11 @@ class $$SettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get activeBizCompanyId => $composableBuilder(
+    column: $table.activeBizCompanyId,
+    builder: (column) => column,
+  );
+
   $$AccountsTableAnnotationComposer get quickAddAccountId {
     final $$AccountsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -19904,6 +25341,7 @@ class $$SettingsTableTableManager
                 Value<int> backupRetentionDays = const Value.absent(),
                 Value<bool> preventScreenshots = const Value.absent(),
                 Value<bool> hideAmounts = const Value.absent(),
+                Value<int?> activeBizCompanyId = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 currencyCode: currencyCode,
@@ -19933,6 +25371,7 @@ class $$SettingsTableTableManager
                 backupRetentionDays: backupRetentionDays,
                 preventScreenshots: preventScreenshots,
                 hideAmounts: hideAmounts,
+                activeBizCompanyId: activeBizCompanyId,
               ),
           createCompanionCallback:
               ({
@@ -19965,6 +25404,7 @@ class $$SettingsTableTableManager
                 Value<int> backupRetentionDays = const Value.absent(),
                 Value<bool> preventScreenshots = const Value.absent(),
                 Value<bool> hideAmounts = const Value.absent(),
+                Value<int?> activeBizCompanyId = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 currencyCode: currencyCode,
@@ -19994,6 +25434,7 @@ class $$SettingsTableTableManager
                 backupRetentionDays: backupRetentionDays,
                 preventScreenshots: preventScreenshots,
                 hideAmounts: hideAmounts,
+                activeBizCompanyId: activeBizCompanyId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -24257,6 +29698,4996 @@ typedef $$AllocationsTableProcessedTableManager =
       AllocationRow,
       PrefetchHooks Function({bool accountId, bool categoryId})
     >;
+typedef $$BizCompaniesTableCreateCompanionBuilder =
+    BizCompaniesCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<String?> address,
+      Value<String?> phone,
+      Value<String?> gstin,
+      Value<int> fyStartMonth,
+      Value<Money> openingStock,
+      Value<Money> closingStock,
+      Value<String> businessType,
+      Value<bool> bookingsEnabled,
+      Value<String?> bookingSlots,
+      Value<String?> bookingFields,
+      Value<DateTime> createdAt,
+    });
+typedef $$BizCompaniesTableUpdateCompanionBuilder =
+    BizCompaniesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String?> address,
+      Value<String?> phone,
+      Value<String?> gstin,
+      Value<int> fyStartMonth,
+      Value<Money> openingStock,
+      Value<Money> closingStock,
+      Value<String> businessType,
+      Value<bool> bookingsEnabled,
+      Value<String?> bookingSlots,
+      Value<String?> bookingFields,
+      Value<DateTime> createdAt,
+    });
+
+final class $$BizCompaniesTableReferences
+    extends BaseReferences<_$AppDatabase, $BizCompaniesTable, BizCompanyRow> {
+  $$BizCompaniesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$BizLedgersTable, List<BizLedgerRow>>
+  _bizLedgersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizLedgers,
+    aliasName: $_aliasNameGenerator(
+      db.bizCompanies.id,
+      db.bizLedgers.companyId,
+    ),
+  );
+
+  $$BizLedgersTableProcessedTableManager get bizLedgersRefs {
+    final manager = $$BizLedgersTableTableManager(
+      $_db,
+      $_db.bizLedgers,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bizLedgersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BizItemsTable, List<BizItemRow>>
+  _bizItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizItems,
+    aliasName: $_aliasNameGenerator(db.bizCompanies.id, db.bizItems.companyId),
+  );
+
+  $$BizItemsTableProcessedTableManager get bizItemsRefs {
+    final manager = $$BizItemsTableTableManager(
+      $_db,
+      $_db.bizItems,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bizItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BizVouchersTable, List<BizVoucherRow>>
+  _bizVouchersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizVouchers,
+    aliasName: $_aliasNameGenerator(
+      db.bizCompanies.id,
+      db.bizVouchers.companyId,
+    ),
+  );
+
+  $$BizVouchersTableProcessedTableManager get bizVouchersRefs {
+    final manager = $$BizVouchersTableTableManager(
+      $_db,
+      $_db.bizVouchers,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bizVouchersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $BizBookingResourcesTable,
+    List<BizBookingResourceRow>
+  >
+  _bizBookingResourcesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.bizBookingResources,
+        aliasName: $_aliasNameGenerator(
+          db.bizCompanies.id,
+          db.bizBookingResources.companyId,
+        ),
+      );
+
+  $$BizBookingResourcesTableProcessedTableManager get bizBookingResourcesRefs {
+    final manager = $$BizBookingResourcesTableTableManager(
+      $_db,
+      $_db.bizBookingResources,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingResourcesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingsTable, List<BizBookingRow>>
+  _bizBookingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookings,
+    aliasName: $_aliasNameGenerator(
+      db.bizCompanies.id,
+      db.bizBookings.companyId,
+    ),
+  );
+
+  $$BizBookingsTableProcessedTableManager get bizBookingsRefs {
+    final manager = $$BizBookingsTableTableManager(
+      $_db,
+      $_db.bizBookings,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bizBookingsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizCompaniesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizCompaniesTable> {
+  $$BizCompaniesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gstin => $composableBuilder(
+    column: $table.gstin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fyStartMonth => $composableBuilder(
+    column: $table.fyStartMonth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get openingStock =>
+      $composableBuilder(
+        column: $table.openingStock,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get closingStock =>
+      $composableBuilder(
+        column: $table.closingStock,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> bizLedgersRefs(
+    Expression<bool> Function($$BizLedgersTableFilterComposer f) f,
+  ) {
+    final $$BizLedgersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizLedgers,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizLedgersTableFilterComposer(
+            $db: $db,
+            $table: $db.bizLedgers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizItemsRefs(
+    Expression<bool> Function($$BizItemsTableFilterComposer f) f,
+  ) {
+    final $$BizItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizItems,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizVouchersRefs(
+    Expression<bool> Function($$BizVouchersTableFilterComposer f) f,
+  ) {
+    final $$BizVouchersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizBookingResourcesRefs(
+    Expression<bool> Function($$BizBookingResourcesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingResourcesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingResources,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingResourcesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingResources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizBookingsRefs(
+    Expression<bool> Function($$BizBookingsTableFilterComposer f) f,
+  ) {
+    final $$BizBookingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizCompaniesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizCompaniesTable> {
+  $$BizCompaniesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gstin => $composableBuilder(
+    column: $table.gstin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fyStartMonth => $composableBuilder(
+    column: $table.fyStartMonth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get openingStock => $composableBuilder(
+    column: $table.openingStock,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get closingStock => $composableBuilder(
+    column: $table.closingStock,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BizCompaniesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizCompaniesTable> {
+  $$BizCompaniesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get gstin =>
+      $composableBuilder(column: $table.gstin, builder: (column) => column);
+
+  GeneratedColumn<int> get fyStartMonth => $composableBuilder(
+    column: $table.fyStartMonth,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<Money, int> get openingStock =>
+      $composableBuilder(
+        column: $table.openingStock,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<Money, int> get closingStock =>
+      $composableBuilder(
+        column: $table.closingStock,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> bizLedgersRefs<T extends Object>(
+    Expression<T> Function($$BizLedgersTableAnnotationComposer a) f,
+  ) {
+    final $$BizLedgersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizLedgers,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizLedgersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizLedgers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> bizItemsRefs<T extends Object>(
+    Expression<T> Function($$BizItemsTableAnnotationComposer a) f,
+  ) {
+    final $$BizItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizItems,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> bizVouchersRefs<T extends Object>(
+    Expression<T> Function($$BizVouchersTableAnnotationComposer a) f,
+  ) {
+    final $$BizVouchersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> bizBookingResourcesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingResourcesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingResourcesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.companyId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> bizBookingsRefs<T extends Object>(
+    Expression<T> Function($$BizBookingsTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizCompaniesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizCompaniesTable,
+          BizCompanyRow,
+          $$BizCompaniesTableFilterComposer,
+          $$BizCompaniesTableOrderingComposer,
+          $$BizCompaniesTableAnnotationComposer,
+          $$BizCompaniesTableCreateCompanionBuilder,
+          $$BizCompaniesTableUpdateCompanionBuilder,
+          (BizCompanyRow, $$BizCompaniesTableReferences),
+          BizCompanyRow,
+          PrefetchHooks Function({
+            bool bizLedgersRefs,
+            bool bizItemsRefs,
+            bool bizVouchersRefs,
+            bool bizBookingResourcesRefs,
+            bool bizBookingsRefs,
+          })
+        > {
+  $$BizCompaniesTableTableManager(_$AppDatabase db, $BizCompaniesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizCompaniesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizCompaniesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizCompaniesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> address = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> gstin = const Value.absent(),
+                Value<int> fyStartMonth = const Value.absent(),
+                Value<Money> openingStock = const Value.absent(),
+                Value<Money> closingStock = const Value.absent(),
+                Value<String> businessType = const Value.absent(),
+                Value<bool> bookingsEnabled = const Value.absent(),
+                Value<String?> bookingSlots = const Value.absent(),
+                Value<String?> bookingFields = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizCompaniesCompanion(
+                id: id,
+                name: name,
+                address: address,
+                phone: phone,
+                gstin: gstin,
+                fyStartMonth: fyStartMonth,
+                openingStock: openingStock,
+                closingStock: closingStock,
+                businessType: businessType,
+                bookingsEnabled: bookingsEnabled,
+                bookingSlots: bookingSlots,
+                bookingFields: bookingFields,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> address = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> gstin = const Value.absent(),
+                Value<int> fyStartMonth = const Value.absent(),
+                Value<Money> openingStock = const Value.absent(),
+                Value<Money> closingStock = const Value.absent(),
+                Value<String> businessType = const Value.absent(),
+                Value<bool> bookingsEnabled = const Value.absent(),
+                Value<String?> bookingSlots = const Value.absent(),
+                Value<String?> bookingFields = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizCompaniesCompanion.insert(
+                id: id,
+                name: name,
+                address: address,
+                phone: phone,
+                gstin: gstin,
+                fyStartMonth: fyStartMonth,
+                openingStock: openingStock,
+                closingStock: closingStock,
+                businessType: businessType,
+                bookingsEnabled: bookingsEnabled,
+                bookingSlots: bookingSlots,
+                bookingFields: bookingFields,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizCompaniesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                bizLedgersRefs = false,
+                bizItemsRefs = false,
+                bizVouchersRefs = false,
+                bizBookingResourcesRefs = false,
+                bizBookingsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizLedgersRefs) db.bizLedgers,
+                    if (bizItemsRefs) db.bizItems,
+                    if (bizVouchersRefs) db.bizVouchers,
+                    if (bizBookingResourcesRefs) db.bizBookingResources,
+                    if (bizBookingsRefs) db.bizBookings,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizLedgersRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizLedgerRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizLedgersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizLedgersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizItemsRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizItemRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizVouchersRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizVoucherRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizVouchersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizVouchersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizBookingResourcesRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizBookingResourceRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizBookingResourcesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingResourcesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizBookingsRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizBookingRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizBookingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizCompaniesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizCompaniesTable,
+      BizCompanyRow,
+      $$BizCompaniesTableFilterComposer,
+      $$BizCompaniesTableOrderingComposer,
+      $$BizCompaniesTableAnnotationComposer,
+      $$BizCompaniesTableCreateCompanionBuilder,
+      $$BizCompaniesTableUpdateCompanionBuilder,
+      (BizCompanyRow, $$BizCompaniesTableReferences),
+      BizCompanyRow,
+      PrefetchHooks Function({
+        bool bizLedgersRefs,
+        bool bizItemsRefs,
+        bool bizVouchersRefs,
+        bool bizBookingResourcesRefs,
+        bool bizBookingsRefs,
+      })
+    >;
+typedef $$BizLedgersTableCreateCompanionBuilder =
+    BizLedgersCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required String name,
+      required BizGroup ledgerGroup,
+      Value<Money> openingBalance,
+      Value<String?> systemKey,
+      Value<String?> phone,
+      Value<String?> gstin,
+      Value<String?> note,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+typedef $$BizLedgersTableUpdateCompanionBuilder =
+    BizLedgersCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<String> name,
+      Value<BizGroup> ledgerGroup,
+      Value<Money> openingBalance,
+      Value<String?> systemKey,
+      Value<String?> phone,
+      Value<String?> gstin,
+      Value<String?> note,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+
+final class $$BizLedgersTableReferences
+    extends BaseReferences<_$AppDatabase, $BizLedgersTable, BizLedgerRow> {
+  $$BizLedgersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(db.bizLedgers.companyId, db.bizCompanies.id),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizVoucherLinesTable, List<BizVoucherLineRow>>
+  _bizVoucherLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizVoucherLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizLedgers.id,
+      db.bizVoucherLines.ledgerId,
+    ),
+  );
+
+  $$BizVoucherLinesTableProcessedTableManager get bizVoucherLinesRefs {
+    final manager = $$BizVoucherLinesTableTableManager(
+      $_db,
+      $_db.bizVoucherLines,
+    ).filter((f) => f.ledgerId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizVoucherLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizLedgersTableFilterComposer
+    extends Composer<_$AppDatabase, $BizLedgersTable> {
+  $$BizLedgersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<BizGroup, BizGroup, String> get ledgerGroup =>
+      $composableBuilder(
+        column: $table.ledgerGroup,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get openingBalance =>
+      $composableBuilder(
+        column: $table.openingBalance,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get systemKey => $composableBuilder(
+    column: $table.systemKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gstin => $composableBuilder(
+    column: $table.gstin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizVoucherLinesRefs(
+    Expression<bool> Function($$BizVoucherLinesTableFilterComposer f) f,
+  ) {
+    final $$BizVoucherLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherLines,
+      getReferencedColumn: (t) => t.ledgerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVoucherLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizLedgersTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizLedgersTable> {
+  $$BizLedgersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ledgerGroup => $composableBuilder(
+    column: $table.ledgerGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get openingBalance => $composableBuilder(
+    column: $table.openingBalance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get systemKey => $composableBuilder(
+    column: $table.systemKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gstin => $composableBuilder(
+    column: $table.gstin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizLedgersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizLedgersTable> {
+  $$BizLedgersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<BizGroup, String> get ledgerGroup =>
+      $composableBuilder(
+        column: $table.ledgerGroup,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<Money, int> get openingBalance =>
+      $composableBuilder(
+        column: $table.openingBalance,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<String> get systemKey =>
+      $composableBuilder(column: $table.systemKey, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get gstin =>
+      $composableBuilder(column: $table.gstin, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizVoucherLinesRefs<T extends Object>(
+    Expression<T> Function($$BizVoucherLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizVoucherLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherLines,
+      getReferencedColumn: (t) => t.ledgerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVoucherLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizLedgersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizLedgersTable,
+          BizLedgerRow,
+          $$BizLedgersTableFilterComposer,
+          $$BizLedgersTableOrderingComposer,
+          $$BizLedgersTableAnnotationComposer,
+          $$BizLedgersTableCreateCompanionBuilder,
+          $$BizLedgersTableUpdateCompanionBuilder,
+          (BizLedgerRow, $$BizLedgersTableReferences),
+          BizLedgerRow,
+          PrefetchHooks Function({bool companyId, bool bizVoucherLinesRefs})
+        > {
+  $$BizLedgersTableTableManager(_$AppDatabase db, $BizLedgersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizLedgersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizLedgersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizLedgersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<BizGroup> ledgerGroup = const Value.absent(),
+                Value<Money> openingBalance = const Value.absent(),
+                Value<String?> systemKey = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> gstin = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizLedgersCompanion(
+                id: id,
+                companyId: companyId,
+                name: name,
+                ledgerGroup: ledgerGroup,
+                openingBalance: openingBalance,
+                systemKey: systemKey,
+                phone: phone,
+                gstin: gstin,
+                note: note,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required String name,
+                required BizGroup ledgerGroup,
+                Value<Money> openingBalance = const Value.absent(),
+                Value<String?> systemKey = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> gstin = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizLedgersCompanion.insert(
+                id: id,
+                companyId: companyId,
+                name: name,
+                ledgerGroup: ledgerGroup,
+                openingBalance: openingBalance,
+                systemKey: systemKey,
+                phone: phone,
+                gstin: gstin,
+                note: note,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizLedgersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizVoucherLinesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizVoucherLinesRefs) db.bizVoucherLines,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable: $$BizLedgersTableReferences
+                                        ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizLedgersTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizVoucherLinesRefs)
+                        await $_getPrefetchedData<
+                          BizLedgerRow,
+                          $BizLedgersTable,
+                          BizVoucherLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizLedgersTableReferences
+                              ._bizVoucherLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizLedgersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizVoucherLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ledgerId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizLedgersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizLedgersTable,
+      BizLedgerRow,
+      $$BizLedgersTableFilterComposer,
+      $$BizLedgersTableOrderingComposer,
+      $$BizLedgersTableAnnotationComposer,
+      $$BizLedgersTableCreateCompanionBuilder,
+      $$BizLedgersTableUpdateCompanionBuilder,
+      (BizLedgerRow, $$BizLedgersTableReferences),
+      BizLedgerRow,
+      PrefetchHooks Function({bool companyId, bool bizVoucherLinesRefs})
+    >;
+typedef $$BizItemsTableCreateCompanionBuilder =
+    BizItemsCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required String name,
+      Value<String> unit,
+      Value<Money> salePrice,
+      Value<Money> purchasePrice,
+      Value<double> gstRate,
+      Value<double> openingQty,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+typedef $$BizItemsTableUpdateCompanionBuilder =
+    BizItemsCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<String> name,
+      Value<String> unit,
+      Value<Money> salePrice,
+      Value<Money> purchasePrice,
+      Value<double> gstRate,
+      Value<double> openingQty,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+
+final class $$BizItemsTableReferences
+    extends BaseReferences<_$AppDatabase, $BizItemsTable, BizItemRow> {
+  $$BizItemsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(db.bizItems.companyId, db.bizCompanies.id),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizVoucherItemsTable, List<BizVoucherItemRow>>
+  _bizVoucherItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizVoucherItems,
+    aliasName: $_aliasNameGenerator(db.bizItems.id, db.bizVoucherItems.itemId),
+  );
+
+  $$BizVoucherItemsTableProcessedTableManager get bizVoucherItemsRefs {
+    final manager = $$BizVoucherItemsTableTableManager(
+      $_db,
+      $_db.bizVoucherItems,
+    ).filter((f) => f.itemId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizVoucherItemsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $BizItemsTable> {
+  $$BizItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get salePrice =>
+      $composableBuilder(
+        column: $table.salePrice,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get purchasePrice =>
+      $composableBuilder(
+        column: $table.purchasePrice,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<double> get gstRate => $composableBuilder(
+    column: $table.gstRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get openingQty => $composableBuilder(
+    column: $table.openingQty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizVoucherItemsRefs(
+    Expression<bool> Function($$BizVoucherItemsTableFilterComposer f) f,
+  ) {
+    final $$BizVoucherItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherItems,
+      getReferencedColumn: (t) => t.itemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVoucherItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizItemsTable> {
+  $$BizItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get salePrice => $composableBuilder(
+    column: $table.salePrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get purchasePrice => $composableBuilder(
+    column: $table.purchasePrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get gstRate => $composableBuilder(
+    column: $table.gstRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get openingQty => $composableBuilder(
+    column: $table.openingQty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizItemsTable> {
+  $$BizItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get salePrice =>
+      $composableBuilder(column: $table.salePrice, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get purchasePrice =>
+      $composableBuilder(
+        column: $table.purchasePrice,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<double> get gstRate =>
+      $composableBuilder(column: $table.gstRate, builder: (column) => column);
+
+  GeneratedColumn<double> get openingQty => $composableBuilder(
+    column: $table.openingQty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizVoucherItemsRefs<T extends Object>(
+    Expression<T> Function($$BizVoucherItemsTableAnnotationComposer a) f,
+  ) {
+    final $$BizVoucherItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherItems,
+      getReferencedColumn: (t) => t.itemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVoucherItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizItemsTable,
+          BizItemRow,
+          $$BizItemsTableFilterComposer,
+          $$BizItemsTableOrderingComposer,
+          $$BizItemsTableAnnotationComposer,
+          $$BizItemsTableCreateCompanionBuilder,
+          $$BizItemsTableUpdateCompanionBuilder,
+          (BizItemRow, $$BizItemsTableReferences),
+          BizItemRow,
+          PrefetchHooks Function({bool companyId, bool bizVoucherItemsRefs})
+        > {
+  $$BizItemsTableTableManager(_$AppDatabase db, $BizItemsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<Money> salePrice = const Value.absent(),
+                Value<Money> purchasePrice = const Value.absent(),
+                Value<double> gstRate = const Value.absent(),
+                Value<double> openingQty = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizItemsCompanion(
+                id: id,
+                companyId: companyId,
+                name: name,
+                unit: unit,
+                salePrice: salePrice,
+                purchasePrice: purchasePrice,
+                gstRate: gstRate,
+                openingQty: openingQty,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required String name,
+                Value<String> unit = const Value.absent(),
+                Value<Money> salePrice = const Value.absent(),
+                Value<Money> purchasePrice = const Value.absent(),
+                Value<double> gstRate = const Value.absent(),
+                Value<double> openingQty = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => BizItemsCompanion.insert(
+                id: id,
+                companyId: companyId,
+                name: name,
+                unit: unit,
+                salePrice: salePrice,
+                purchasePrice: purchasePrice,
+                gstRate: gstRate,
+                openingQty: openingQty,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizItemsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizVoucherItemsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizVoucherItemsRefs) db.bizVoucherItems,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable: $$BizItemsTableReferences
+                                        ._companyIdTable(db),
+                                    referencedColumn: $$BizItemsTableReferences
+                                        ._companyIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizVoucherItemsRefs)
+                        await $_getPrefetchedData<
+                          BizItemRow,
+                          $BizItemsTable,
+                          BizVoucherItemRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizItemsTableReferences
+                              ._bizVoucherItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizItemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizVoucherItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.itemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizItemsTable,
+      BizItemRow,
+      $$BizItemsTableFilterComposer,
+      $$BizItemsTableOrderingComposer,
+      $$BizItemsTableAnnotationComposer,
+      $$BizItemsTableCreateCompanionBuilder,
+      $$BizItemsTableUpdateCompanionBuilder,
+      (BizItemRow, $$BizItemsTableReferences),
+      BizItemRow,
+      PrefetchHooks Function({bool companyId, bool bizVoucherItemsRefs})
+    >;
+typedef $$BizVouchersTableCreateCompanionBuilder =
+    BizVouchersCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required BizVoucherType type,
+      required int number,
+      required DateTime date,
+      Value<String?> narration,
+      Value<String?> reference,
+      Value<String?> entryKind,
+      Value<int?> bookingId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$BizVouchersTableUpdateCompanionBuilder =
+    BizVouchersCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<BizVoucherType> type,
+      Value<int> number,
+      Value<DateTime> date,
+      Value<String?> narration,
+      Value<String?> reference,
+      Value<String?> entryKind,
+      Value<int?> bookingId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$BizVouchersTableReferences
+    extends BaseReferences<_$AppDatabase, $BizVouchersTable, BizVoucherRow> {
+  $$BizVouchersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(db.bizVouchers.companyId, db.bizCompanies.id),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizVoucherLinesTable, List<BizVoucherLineRow>>
+  _bizVoucherLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizVoucherLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizVouchers.id,
+      db.bizVoucherLines.voucherId,
+    ),
+  );
+
+  $$BizVoucherLinesTableProcessedTableManager get bizVoucherLinesRefs {
+    final manager = $$BizVoucherLinesTableTableManager(
+      $_db,
+      $_db.bizVoucherLines,
+    ).filter((f) => f.voucherId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizVoucherLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BizVoucherItemsTable, List<BizVoucherItemRow>>
+  _bizVoucherItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizVoucherItems,
+    aliasName: $_aliasNameGenerator(
+      db.bizVouchers.id,
+      db.bizVoucherItems.voucherId,
+    ),
+  );
+
+  $$BizVoucherItemsTableProcessedTableManager get bizVoucherItemsRefs {
+    final manager = $$BizVoucherItemsTableTableManager(
+      $_db,
+      $_db.bizVoucherItems,
+    ).filter((f) => f.voucherId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizVoucherItemsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizVouchersTableFilterComposer
+    extends Composer<_$AppDatabase, $BizVouchersTable> {
+  $$BizVouchersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<BizVoucherType, BizVoucherType, String>
+  get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get narration => $composableBuilder(
+    column: $table.narration,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entryKind => $composableBuilder(
+    column: $table.entryKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bookingId => $composableBuilder(
+    column: $table.bookingId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizVoucherLinesRefs(
+    Expression<bool> Function($$BizVoucherLinesTableFilterComposer f) f,
+  ) {
+    final $$BizVoucherLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherLines,
+      getReferencedColumn: (t) => t.voucherId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVoucherLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizVoucherItemsRefs(
+    Expression<bool> Function($$BizVoucherItemsTableFilterComposer f) f,
+  ) {
+    final $$BizVoucherItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherItems,
+      getReferencedColumn: (t) => t.voucherId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVoucherItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizVouchersTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizVouchersTable> {
+  $$BizVouchersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get narration => $composableBuilder(
+    column: $table.narration,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entryKind => $composableBuilder(
+    column: $table.entryKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bookingId => $composableBuilder(
+    column: $table.bookingId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVouchersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizVouchersTable> {
+  $$BizVouchersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<BizVoucherType, String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get narration =>
+      $composableBuilder(column: $table.narration, builder: (column) => column);
+
+  GeneratedColumn<String> get reference =>
+      $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<String> get entryKind =>
+      $composableBuilder(column: $table.entryKind, builder: (column) => column);
+
+  GeneratedColumn<int> get bookingId =>
+      $composableBuilder(column: $table.bookingId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizVoucherLinesRefs<T extends Object>(
+    Expression<T> Function($$BizVoucherLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizVoucherLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherLines,
+      getReferencedColumn: (t) => t.voucherId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVoucherLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> bizVoucherItemsRefs<T extends Object>(
+    Expression<T> Function($$BizVoucherItemsTableAnnotationComposer a) f,
+  ) {
+    final $$BizVoucherItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizVoucherItems,
+      getReferencedColumn: (t) => t.voucherId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVoucherItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVoucherItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizVouchersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizVouchersTable,
+          BizVoucherRow,
+          $$BizVouchersTableFilterComposer,
+          $$BizVouchersTableOrderingComposer,
+          $$BizVouchersTableAnnotationComposer,
+          $$BizVouchersTableCreateCompanionBuilder,
+          $$BizVouchersTableUpdateCompanionBuilder,
+          (BizVoucherRow, $$BizVouchersTableReferences),
+          BizVoucherRow,
+          PrefetchHooks Function({
+            bool companyId,
+            bool bizVoucherLinesRefs,
+            bool bizVoucherItemsRefs,
+          })
+        > {
+  $$BizVouchersTableTableManager(_$AppDatabase db, $BizVouchersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizVouchersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizVouchersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizVouchersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<BizVoucherType> type = const Value.absent(),
+                Value<int> number = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String?> narration = const Value.absent(),
+                Value<String?> reference = const Value.absent(),
+                Value<String?> entryKind = const Value.absent(),
+                Value<int?> bookingId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizVouchersCompanion(
+                id: id,
+                companyId: companyId,
+                type: type,
+                number: number,
+                date: date,
+                narration: narration,
+                reference: reference,
+                entryKind: entryKind,
+                bookingId: bookingId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required BizVoucherType type,
+                required int number,
+                required DateTime date,
+                Value<String?> narration = const Value.absent(),
+                Value<String?> reference = const Value.absent(),
+                Value<String?> entryKind = const Value.absent(),
+                Value<int?> bookingId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizVouchersCompanion.insert(
+                id: id,
+                companyId: companyId,
+                type: type,
+                number: number,
+                date: date,
+                narration: narration,
+                reference: reference,
+                entryKind: entryKind,
+                bookingId: bookingId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizVouchersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                companyId = false,
+                bizVoucherLinesRefs = false,
+                bizVoucherItemsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizVoucherLinesRefs) db.bizVoucherLines,
+                    if (bizVoucherItemsRefs) db.bizVoucherItems,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable:
+                                        $$BizVouchersTableReferences
+                                            ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizVouchersTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizVoucherLinesRefs)
+                        await $_getPrefetchedData<
+                          BizVoucherRow,
+                          $BizVouchersTable,
+                          BizVoucherLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizVouchersTableReferences
+                              ._bizVoucherLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizVouchersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizVoucherLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.voucherId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizVoucherItemsRefs)
+                        await $_getPrefetchedData<
+                          BizVoucherRow,
+                          $BizVouchersTable,
+                          BizVoucherItemRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizVouchersTableReferences
+                              ._bizVoucherItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizVouchersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizVoucherItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.voucherId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizVouchersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizVouchersTable,
+      BizVoucherRow,
+      $$BizVouchersTableFilterComposer,
+      $$BizVouchersTableOrderingComposer,
+      $$BizVouchersTableAnnotationComposer,
+      $$BizVouchersTableCreateCompanionBuilder,
+      $$BizVouchersTableUpdateCompanionBuilder,
+      (BizVoucherRow, $$BizVouchersTableReferences),
+      BizVoucherRow,
+      PrefetchHooks Function({
+        bool companyId,
+        bool bizVoucherLinesRefs,
+        bool bizVoucherItemsRefs,
+      })
+    >;
+typedef $$BizVoucherLinesTableCreateCompanionBuilder =
+    BizVoucherLinesCompanion Function({
+      Value<int> id,
+      required int voucherId,
+      required int ledgerId,
+      Value<Money> debit,
+      Value<Money> credit,
+    });
+typedef $$BizVoucherLinesTableUpdateCompanionBuilder =
+    BizVoucherLinesCompanion Function({
+      Value<int> id,
+      Value<int> voucherId,
+      Value<int> ledgerId,
+      Value<Money> debit,
+      Value<Money> credit,
+    });
+
+final class $$BizVoucherLinesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizVoucherLinesTable,
+          BizVoucherLineRow
+        > {
+  $$BizVoucherLinesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizVouchersTable _voucherIdTable(_$AppDatabase db) =>
+      db.bizVouchers.createAlias(
+        $_aliasNameGenerator(db.bizVoucherLines.voucherId, db.bizVouchers.id),
+      );
+
+  $$BizVouchersTableProcessedTableManager get voucherId {
+    final $_column = $_itemColumn<int>('voucher_id')!;
+
+    final manager = $$BizVouchersTableTableManager(
+      $_db,
+      $_db.bizVouchers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_voucherIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BizLedgersTable _ledgerIdTable(_$AppDatabase db) =>
+      db.bizLedgers.createAlias(
+        $_aliasNameGenerator(db.bizVoucherLines.ledgerId, db.bizLedgers.id),
+      );
+
+  $$BizLedgersTableProcessedTableManager get ledgerId {
+    final $_column = $_itemColumn<int>('ledger_id')!;
+
+    final manager = $$BizLedgersTableTableManager(
+      $_db,
+      $_db.bizLedgers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ledgerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BizVoucherLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizVoucherLinesTable> {
+  $$BizVoucherLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get debit =>
+      $composableBuilder(
+        column: $table.debit,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get credit =>
+      $composableBuilder(
+        column: $table.credit,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$BizVouchersTableFilterComposer get voucherId {
+    final $$BizVouchersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizLedgersTableFilterComposer get ledgerId {
+    final $$BizLedgersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ledgerId,
+      referencedTable: $db.bizLedgers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizLedgersTableFilterComposer(
+            $db: $db,
+            $table: $db.bizLedgers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizVoucherLinesTable> {
+  $$BizVoucherLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get debit => $composableBuilder(
+    column: $table.debit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get credit => $composableBuilder(
+    column: $table.credit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizVouchersTableOrderingComposer get voucherId {
+    final $$BizVouchersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizLedgersTableOrderingComposer get ledgerId {
+    final $$BizLedgersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ledgerId,
+      referencedTable: $db.bizLedgers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizLedgersTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizLedgers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizVoucherLinesTable> {
+  $$BizVoucherLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get debit =>
+      $composableBuilder(column: $table.debit, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get credit =>
+      $composableBuilder(column: $table.credit, builder: (column) => column);
+
+  $$BizVouchersTableAnnotationComposer get voucherId {
+    final $$BizVouchersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizLedgersTableAnnotationComposer get ledgerId {
+    final $$BizLedgersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ledgerId,
+      referencedTable: $db.bizLedgers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizLedgersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizLedgers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizVoucherLinesTable,
+          BizVoucherLineRow,
+          $$BizVoucherLinesTableFilterComposer,
+          $$BizVoucherLinesTableOrderingComposer,
+          $$BizVoucherLinesTableAnnotationComposer,
+          $$BizVoucherLinesTableCreateCompanionBuilder,
+          $$BizVoucherLinesTableUpdateCompanionBuilder,
+          (BizVoucherLineRow, $$BizVoucherLinesTableReferences),
+          BizVoucherLineRow,
+          PrefetchHooks Function({bool voucherId, bool ledgerId})
+        > {
+  $$BizVoucherLinesTableTableManager(
+    _$AppDatabase db,
+    $BizVoucherLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizVoucherLinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizVoucherLinesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizVoucherLinesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> voucherId = const Value.absent(),
+                Value<int> ledgerId = const Value.absent(),
+                Value<Money> debit = const Value.absent(),
+                Value<Money> credit = const Value.absent(),
+              }) => BizVoucherLinesCompanion(
+                id: id,
+                voucherId: voucherId,
+                ledgerId: ledgerId,
+                debit: debit,
+                credit: credit,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int voucherId,
+                required int ledgerId,
+                Value<Money> debit = const Value.absent(),
+                Value<Money> credit = const Value.absent(),
+              }) => BizVoucherLinesCompanion.insert(
+                id: id,
+                voucherId: voucherId,
+                ledgerId: ledgerId,
+                debit: debit,
+                credit: credit,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizVoucherLinesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({voucherId = false, ledgerId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (voucherId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.voucherId,
+                                referencedTable:
+                                    $$BizVoucherLinesTableReferences
+                                        ._voucherIdTable(db),
+                                referencedColumn:
+                                    $$BizVoucherLinesTableReferences
+                                        ._voucherIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (ledgerId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ledgerId,
+                                referencedTable:
+                                    $$BizVoucherLinesTableReferences
+                                        ._ledgerIdTable(db),
+                                referencedColumn:
+                                    $$BizVoucherLinesTableReferences
+                                        ._ledgerIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BizVoucherLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizVoucherLinesTable,
+      BizVoucherLineRow,
+      $$BizVoucherLinesTableFilterComposer,
+      $$BizVoucherLinesTableOrderingComposer,
+      $$BizVoucherLinesTableAnnotationComposer,
+      $$BizVoucherLinesTableCreateCompanionBuilder,
+      $$BizVoucherLinesTableUpdateCompanionBuilder,
+      (BizVoucherLineRow, $$BizVoucherLinesTableReferences),
+      BizVoucherLineRow,
+      PrefetchHooks Function({bool voucherId, bool ledgerId})
+    >;
+typedef $$BizVoucherItemsTableCreateCompanionBuilder =
+    BizVoucherItemsCompanion Function({
+      Value<int> id,
+      required int voucherId,
+      required int itemId,
+      required double qty,
+      required Money rate,
+      required Money amount,
+    });
+typedef $$BizVoucherItemsTableUpdateCompanionBuilder =
+    BizVoucherItemsCompanion Function({
+      Value<int> id,
+      Value<int> voucherId,
+      Value<int> itemId,
+      Value<double> qty,
+      Value<Money> rate,
+      Value<Money> amount,
+    });
+
+final class $$BizVoucherItemsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizVoucherItemsTable,
+          BizVoucherItemRow
+        > {
+  $$BizVoucherItemsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizVouchersTable _voucherIdTable(_$AppDatabase db) =>
+      db.bizVouchers.createAlias(
+        $_aliasNameGenerator(db.bizVoucherItems.voucherId, db.bizVouchers.id),
+      );
+
+  $$BizVouchersTableProcessedTableManager get voucherId {
+    final $_column = $_itemColumn<int>('voucher_id')!;
+
+    final manager = $$BizVouchersTableTableManager(
+      $_db,
+      $_db.bizVouchers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_voucherIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BizItemsTable _itemIdTable(_$AppDatabase db) =>
+      db.bizItems.createAlias(
+        $_aliasNameGenerator(db.bizVoucherItems.itemId, db.bizItems.id),
+      );
+
+  $$BizItemsTableProcessedTableManager get itemId {
+    final $_column = $_itemColumn<int>('item_id')!;
+
+    final manager = $$BizItemsTableTableManager(
+      $_db,
+      $_db.bizItems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BizVoucherItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $BizVoucherItemsTable> {
+  $$BizVoucherItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get rate =>
+      $composableBuilder(
+        column: $table.rate,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get amount =>
+      $composableBuilder(
+        column: $table.amount,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$BizVouchersTableFilterComposer get voucherId {
+    final $$BizVouchersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableFilterComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizItemsTableFilterComposer get itemId {
+    final $$BizItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.bizItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizVoucherItemsTable> {
+  $$BizVoucherItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rate => $composableBuilder(
+    column: $table.rate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizVouchersTableOrderingComposer get voucherId {
+    final $$BizVouchersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizItemsTableOrderingComposer get itemId {
+    final $$BizItemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.bizItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizItemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizVoucherItemsTable> {
+  $$BizVoucherItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get qty =>
+      $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  $$BizVouchersTableAnnotationComposer get voucherId {
+    final $$BizVouchersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.voucherId,
+      referencedTable: $db.bizVouchers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizVouchersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizVouchers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizItemsTableAnnotationComposer get itemId {
+    final $$BizItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.bizItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizVoucherItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizVoucherItemsTable,
+          BizVoucherItemRow,
+          $$BizVoucherItemsTableFilterComposer,
+          $$BizVoucherItemsTableOrderingComposer,
+          $$BizVoucherItemsTableAnnotationComposer,
+          $$BizVoucherItemsTableCreateCompanionBuilder,
+          $$BizVoucherItemsTableUpdateCompanionBuilder,
+          (BizVoucherItemRow, $$BizVoucherItemsTableReferences),
+          BizVoucherItemRow,
+          PrefetchHooks Function({bool voucherId, bool itemId})
+        > {
+  $$BizVoucherItemsTableTableManager(
+    _$AppDatabase db,
+    $BizVoucherItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizVoucherItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizVoucherItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizVoucherItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> voucherId = const Value.absent(),
+                Value<int> itemId = const Value.absent(),
+                Value<double> qty = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<Money> amount = const Value.absent(),
+              }) => BizVoucherItemsCompanion(
+                id: id,
+                voucherId: voucherId,
+                itemId: itemId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int voucherId,
+                required int itemId,
+                required double qty,
+                required Money rate,
+                required Money amount,
+              }) => BizVoucherItemsCompanion.insert(
+                id: id,
+                voucherId: voucherId,
+                itemId: itemId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizVoucherItemsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({voucherId = false, itemId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (voucherId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.voucherId,
+                                referencedTable:
+                                    $$BizVoucherItemsTableReferences
+                                        ._voucherIdTable(db),
+                                referencedColumn:
+                                    $$BizVoucherItemsTableReferences
+                                        ._voucherIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (itemId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.itemId,
+                                referencedTable:
+                                    $$BizVoucherItemsTableReferences
+                                        ._itemIdTable(db),
+                                referencedColumn:
+                                    $$BizVoucherItemsTableReferences
+                                        ._itemIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BizVoucherItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizVoucherItemsTable,
+      BizVoucherItemRow,
+      $$BizVoucherItemsTableFilterComposer,
+      $$BizVoucherItemsTableOrderingComposer,
+      $$BizVoucherItemsTableAnnotationComposer,
+      $$BizVoucherItemsTableCreateCompanionBuilder,
+      $$BizVoucherItemsTableUpdateCompanionBuilder,
+      (BizVoucherItemRow, $$BizVoucherItemsTableReferences),
+      BizVoucherItemRow,
+      PrefetchHooks Function({bool voucherId, bool itemId})
+    >;
+typedef $$BizBookingResourcesTableCreateCompanionBuilder =
+    BizBookingResourcesCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required String name,
+      Value<int> capacity,
+      Value<bool> shared,
+      Value<Money> rate,
+      Value<int> sort,
+      Value<bool> isArchived,
+    });
+typedef $$BizBookingResourcesTableUpdateCompanionBuilder =
+    BizBookingResourcesCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<String> name,
+      Value<int> capacity,
+      Value<bool> shared,
+      Value<Money> rate,
+      Value<int> sort,
+      Value<bool> isArchived,
+    });
+
+final class $$BizBookingResourcesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizBookingResourcesTable,
+          BizBookingResourceRow
+        > {
+  $$BizBookingResourcesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(
+          db.bizBookingResources.companyId,
+          db.bizCompanies.id,
+        ),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingLinesTable, List<BizBookingLineRow>>
+  _bizBookingLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookingLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizBookingResources.id,
+      db.bizBookingLines.resourceId,
+    ),
+  );
+
+  $$BizBookingLinesTableProcessedTableManager get bizBookingLinesRefs {
+    final manager = $$BizBookingLinesTableTableManager(
+      $_db,
+      $_db.bizBookingLines,
+    ).filter((f) => f.resourceId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizBookingResourcesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get capacity => $composableBuilder(
+    column: $table.capacity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get shared => $composableBuilder(
+    column: $table.shared,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get rate =>
+      $composableBuilder(
+        column: $table.rate,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizBookingLinesRefs(
+    Expression<bool> Function($$BizBookingLinesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.resourceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingResourcesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get capacity => $composableBuilder(
+    column: $table.capacity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get shared => $composableBuilder(
+    column: $table.shared,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rate => $composableBuilder(
+    column: $table.rate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingResourcesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get capacity =>
+      $composableBuilder(column: $table.capacity, builder: (column) => column);
+
+  GeneratedColumn<bool> get shared =>
+      $composableBuilder(column: $table.shared, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumn<int> get sort =>
+      $composableBuilder(column: $table.sort, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizBookingLinesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.resourceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingResourcesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingResourcesTable,
+          BizBookingResourceRow,
+          $$BizBookingResourcesTableFilterComposer,
+          $$BizBookingResourcesTableOrderingComposer,
+          $$BizBookingResourcesTableAnnotationComposer,
+          $$BizBookingResourcesTableCreateCompanionBuilder,
+          $$BizBookingResourcesTableUpdateCompanionBuilder,
+          (BizBookingResourceRow, $$BizBookingResourcesTableReferences),
+          BizBookingResourceRow,
+          PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+        > {
+  $$BizBookingResourcesTableTableManager(
+    _$AppDatabase db,
+    $BizBookingResourcesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingResourcesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingResourcesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BizBookingResourcesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> capacity = const Value.absent(),
+                Value<bool> shared = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+              }) => BizBookingResourcesCompanion(
+                id: id,
+                companyId: companyId,
+                name: name,
+                capacity: capacity,
+                shared: shared,
+                rate: rate,
+                sort: sort,
+                isArchived: isArchived,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required String name,
+                Value<int> capacity = const Value.absent(),
+                Value<bool> shared = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+              }) => BizBookingResourcesCompanion.insert(
+                id: id,
+                companyId: companyId,
+                name: name,
+                capacity: capacity,
+                shared: shared,
+                rate: rate,
+                sort: sort,
+                isArchived: isArchived,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingResourcesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizBookingLinesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizBookingLinesRefs) db.bizBookingLines,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable:
+                                        $$BizBookingResourcesTableReferences
+                                            ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizBookingResourcesTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizBookingLinesRefs)
+                        await $_getPrefetchedData<
+                          BizBookingResourceRow,
+                          $BizBookingResourcesTable,
+                          BizBookingLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizBookingResourcesTableReferences
+                              ._bizBookingLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizBookingResourcesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.resourceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizBookingResourcesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingResourcesTable,
+      BizBookingResourceRow,
+      $$BizBookingResourcesTableFilterComposer,
+      $$BizBookingResourcesTableOrderingComposer,
+      $$BizBookingResourcesTableAnnotationComposer,
+      $$BizBookingResourcesTableCreateCompanionBuilder,
+      $$BizBookingResourcesTableUpdateCompanionBuilder,
+      (BizBookingResourceRow, $$BizBookingResourcesTableReferences),
+      BizBookingResourceRow,
+      PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+    >;
+typedef $$BizBookingsTableCreateCompanionBuilder =
+    BizBookingsCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required int number,
+      required String customerName,
+      Value<String?> phone,
+      Value<String?> title,
+      required DateTime startDate,
+      required DateTime endDate,
+      Value<String> slot,
+      required BizBookingStatus status,
+      Value<int> guests,
+      Value<Money> totalAmount,
+      Value<int?> partyLedgerId,
+      Value<String> extra,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$BizBookingsTableUpdateCompanionBuilder =
+    BizBookingsCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<int> number,
+      Value<String> customerName,
+      Value<String?> phone,
+      Value<String?> title,
+      Value<DateTime> startDate,
+      Value<DateTime> endDate,
+      Value<String> slot,
+      Value<BizBookingStatus> status,
+      Value<int> guests,
+      Value<Money> totalAmount,
+      Value<int?> partyLedgerId,
+      Value<String> extra,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$BizBookingsTableReferences
+    extends BaseReferences<_$AppDatabase, $BizBookingsTable, BizBookingRow> {
+  $$BizBookingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(db.bizBookings.companyId, db.bizCompanies.id),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingLinesTable, List<BizBookingLineRow>>
+  _bizBookingLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookingLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizBookings.id,
+      db.bizBookingLines.bookingId,
+    ),
+  );
+
+  $$BizBookingLinesTableProcessedTableManager get bizBookingLinesRefs {
+    final manager = $$BizBookingLinesTableTableManager(
+      $_db,
+      $_db.bizBookingLines,
+    ).filter((f) => f.bookingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizBookingsTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get slot => $composableBuilder(
+    column: $table.slot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<BizBookingStatus, BizBookingStatus, String>
+  get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get guests => $composableBuilder(
+    column: $table.guests,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get totalAmount =>
+      $composableBuilder(
+        column: $table.totalAmount,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extra => $composableBuilder(
+    column: $table.extra,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizBookingLinesRefs(
+    Expression<bool> Function($$BizBookingLinesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.bookingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get slot => $composableBuilder(
+    column: $table.slot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guests => $composableBuilder(
+    column: $table.guests,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalAmount => $composableBuilder(
+    column: $table.totalAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get extra => $composableBuilder(
+    column: $table.extra,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get slot =>
+      $composableBuilder(column: $table.slot, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<BizBookingStatus, String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get guests =>
+      $composableBuilder(column: $table.guests, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get totalAmount =>
+      $composableBuilder(
+        column: $table.totalAmount,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get extra =>
+      $composableBuilder(column: $table.extra, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizBookingLinesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.bookingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingsTable,
+          BizBookingRow,
+          $$BizBookingsTableFilterComposer,
+          $$BizBookingsTableOrderingComposer,
+          $$BizBookingsTableAnnotationComposer,
+          $$BizBookingsTableCreateCompanionBuilder,
+          $$BizBookingsTableUpdateCompanionBuilder,
+          (BizBookingRow, $$BizBookingsTableReferences),
+          BizBookingRow,
+          PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+        > {
+  $$BizBookingsTableTableManager(_$AppDatabase db, $BizBookingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizBookingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<int> number = const Value.absent(),
+                Value<String> customerName = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime> endDate = const Value.absent(),
+                Value<String> slot = const Value.absent(),
+                Value<BizBookingStatus> status = const Value.absent(),
+                Value<int> guests = const Value.absent(),
+                Value<Money> totalAmount = const Value.absent(),
+                Value<int?> partyLedgerId = const Value.absent(),
+                Value<String> extra = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizBookingsCompanion(
+                id: id,
+                companyId: companyId,
+                number: number,
+                customerName: customerName,
+                phone: phone,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                slot: slot,
+                status: status,
+                guests: guests,
+                totalAmount: totalAmount,
+                partyLedgerId: partyLedgerId,
+                extra: extra,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required int number,
+                required String customerName,
+                Value<String?> phone = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                required DateTime startDate,
+                required DateTime endDate,
+                Value<String> slot = const Value.absent(),
+                required BizBookingStatus status,
+                Value<int> guests = const Value.absent(),
+                Value<Money> totalAmount = const Value.absent(),
+                Value<int?> partyLedgerId = const Value.absent(),
+                Value<String> extra = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizBookingsCompanion.insert(
+                id: id,
+                companyId: companyId,
+                number: number,
+                customerName: customerName,
+                phone: phone,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                slot: slot,
+                status: status,
+                guests: guests,
+                totalAmount: totalAmount,
+                partyLedgerId: partyLedgerId,
+                extra: extra,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizBookingLinesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizBookingLinesRefs) db.bizBookingLines,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable:
+                                        $$BizBookingsTableReferences
+                                            ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizBookingsTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizBookingLinesRefs)
+                        await $_getPrefetchedData<
+                          BizBookingRow,
+                          $BizBookingsTable,
+                          BizBookingLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizBookingsTableReferences
+                              ._bizBookingLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizBookingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizBookingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingsTable,
+      BizBookingRow,
+      $$BizBookingsTableFilterComposer,
+      $$BizBookingsTableOrderingComposer,
+      $$BizBookingsTableAnnotationComposer,
+      $$BizBookingsTableCreateCompanionBuilder,
+      $$BizBookingsTableUpdateCompanionBuilder,
+      (BizBookingRow, $$BizBookingsTableReferences),
+      BizBookingRow,
+      PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+    >;
+typedef $$BizBookingLinesTableCreateCompanionBuilder =
+    BizBookingLinesCompanion Function({
+      Value<int> id,
+      required int bookingId,
+      required int resourceId,
+      Value<int> qty,
+      Value<Money> rate,
+      Value<Money> amount,
+    });
+typedef $$BizBookingLinesTableUpdateCompanionBuilder =
+    BizBookingLinesCompanion Function({
+      Value<int> id,
+      Value<int> bookingId,
+      Value<int> resourceId,
+      Value<int> qty,
+      Value<Money> rate,
+      Value<Money> amount,
+    });
+
+final class $$BizBookingLinesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizBookingLinesTable,
+          BizBookingLineRow
+        > {
+  $$BizBookingLinesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizBookingsTable _bookingIdTable(_$AppDatabase db) =>
+      db.bizBookings.createAlias(
+        $_aliasNameGenerator(db.bizBookingLines.bookingId, db.bizBookings.id),
+      );
+
+  $$BizBookingsTableProcessedTableManager get bookingId {
+    final $_column = $_itemColumn<int>('booking_id')!;
+
+    final manager = $$BizBookingsTableTableManager(
+      $_db,
+      $_db.bizBookings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BizBookingResourcesTable _resourceIdTable(_$AppDatabase db) =>
+      db.bizBookingResources.createAlias(
+        $_aliasNameGenerator(
+          db.bizBookingLines.resourceId,
+          db.bizBookingResources.id,
+        ),
+      );
+
+  $$BizBookingResourcesTableProcessedTableManager get resourceId {
+    final $_column = $_itemColumn<int>('resource_id')!;
+
+    final manager = $$BizBookingResourcesTableTableManager(
+      $_db,
+      $_db.bizBookingResources,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_resourceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BizBookingLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get rate =>
+      $composableBuilder(
+        column: $table.rate,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get amount =>
+      $composableBuilder(
+        column: $table.amount,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$BizBookingsTableFilterComposer get bookingId {
+    final $$BizBookingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableFilterComposer get resourceId {
+    final $$BizBookingResourcesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.resourceId,
+      referencedTable: $db.bizBookingResources,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingResourcesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingResources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rate => $composableBuilder(
+    column: $table.rate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizBookingsTableOrderingComposer get bookingId {
+    final $$BizBookingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableOrderingComposer get resourceId {
+    final $$BizBookingResourcesTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resourceId,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableOrderingComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get qty =>
+      $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  $$BizBookingsTableAnnotationComposer get bookingId {
+    final $$BizBookingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableAnnotationComposer get resourceId {
+    final $$BizBookingResourcesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resourceId,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingLinesTable,
+          BizBookingLineRow,
+          $$BizBookingLinesTableFilterComposer,
+          $$BizBookingLinesTableOrderingComposer,
+          $$BizBookingLinesTableAnnotationComposer,
+          $$BizBookingLinesTableCreateCompanionBuilder,
+          $$BizBookingLinesTableUpdateCompanionBuilder,
+          (BizBookingLineRow, $$BizBookingLinesTableReferences),
+          BizBookingLineRow,
+          PrefetchHooks Function({bool bookingId, bool resourceId})
+        > {
+  $$BizBookingLinesTableTableManager(
+    _$AppDatabase db,
+    $BizBookingLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingLinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingLinesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizBookingLinesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> bookingId = const Value.absent(),
+                Value<int> resourceId = const Value.absent(),
+                Value<int> qty = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<Money> amount = const Value.absent(),
+              }) => BizBookingLinesCompanion(
+                id: id,
+                bookingId: bookingId,
+                resourceId: resourceId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int bookingId,
+                required int resourceId,
+                Value<int> qty = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<Money> amount = const Value.absent(),
+              }) => BizBookingLinesCompanion.insert(
+                id: id,
+                bookingId: bookingId,
+                resourceId: resourceId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingLinesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookingId = false, resourceId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bookingId,
+                                referencedTable:
+                                    $$BizBookingLinesTableReferences
+                                        ._bookingIdTable(db),
+                                referencedColumn:
+                                    $$BizBookingLinesTableReferences
+                                        ._bookingIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (resourceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.resourceId,
+                                referencedTable:
+                                    $$BizBookingLinesTableReferences
+                                        ._resourceIdTable(db),
+                                referencedColumn:
+                                    $$BizBookingLinesTableReferences
+                                        ._resourceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BizBookingLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingLinesTable,
+      BizBookingLineRow,
+      $$BizBookingLinesTableFilterComposer,
+      $$BizBookingLinesTableOrderingComposer,
+      $$BizBookingLinesTableAnnotationComposer,
+      $$BizBookingLinesTableCreateCompanionBuilder,
+      $$BizBookingLinesTableUpdateCompanionBuilder,
+      (BizBookingLineRow, $$BizBookingLinesTableReferences),
+      BizBookingLineRow,
+      PrefetchHooks Function({bool bookingId, bool resourceId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -24302,4 +34733,22 @@ class $AppDatabaseManager {
       $$BackupRecordsTableTableManager(_db, _db.backupRecords);
   $$AllocationsTableTableManager get allocations =>
       $$AllocationsTableTableManager(_db, _db.allocations);
+  $$BizCompaniesTableTableManager get bizCompanies =>
+      $$BizCompaniesTableTableManager(_db, _db.bizCompanies);
+  $$BizLedgersTableTableManager get bizLedgers =>
+      $$BizLedgersTableTableManager(_db, _db.bizLedgers);
+  $$BizItemsTableTableManager get bizItems =>
+      $$BizItemsTableTableManager(_db, _db.bizItems);
+  $$BizVouchersTableTableManager get bizVouchers =>
+      $$BizVouchersTableTableManager(_db, _db.bizVouchers);
+  $$BizVoucherLinesTableTableManager get bizVoucherLines =>
+      $$BizVoucherLinesTableTableManager(_db, _db.bizVoucherLines);
+  $$BizVoucherItemsTableTableManager get bizVoucherItems =>
+      $$BizVoucherItemsTableTableManager(_db, _db.bizVoucherItems);
+  $$BizBookingResourcesTableTableManager get bizBookingResources =>
+      $$BizBookingResourcesTableTableManager(_db, _db.bizBookingResources);
+  $$BizBookingsTableTableManager get bizBookings =>
+      $$BizBookingsTableTableManager(_db, _db.bizBookings);
+  $$BizBookingLinesTableTableManager get bizBookingLines =>
+      $$BizBookingLinesTableTableManager(_db, _db.bizBookingLines);
 }

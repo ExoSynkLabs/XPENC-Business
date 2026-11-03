@@ -541,6 +541,62 @@ Notes on ordering:
 
 ---
 
+## 10.5 Business Books — Tally-style double entry (schema v30)
+
+A separate book-keeping module for a small business, under **More → Business Books**
+(`lib/features/business/`). It shares **nothing** with the personal ledger — a
+business's capital, loans and stock follow double-entry rules the personal
+`Accounts`/`Transactions` model was never built for, and keeping them apart means
+neither can break the other's invariants (§1).
+
+| Concept | Table | Notes |
+|---|---|---|
+| **Company** | `biz_companies` | Several businesses side by side; FY start month (India: April); manual opening/closing stock. Active one = `settings.active_biz_company_id`. |
+| **Ledger** | `biz_ledgers` | Belongs to one fixed **group** (`BizGroup` — Tally's primary groups: Capital, Loans (Liability), Sundry Debtors/Creditors, Duties & Taxes, Fixed Assets, Investments, Bank, Cash, Sales, Purchase, Direct/Indirect Income/Expense…). Opening balance is **signed** (+Dr / −Cr). `system_key` marks the ledgers the app relies on (cash, capital, sales, purchase, gstOut, gstIn). |
+| **Item** | `biz_items` | Stock item; quantities are doubles, money stays paise. |
+| **Voucher** | `biz_vouchers` + `biz_voucher_lines` + `biz_voucher_items` | Tally's 8 types (Sales, Purchase, Receipt, Payment, Contra, Journal, Credit/Debit Note), numbered per type. **Σ debit = Σ credit is enforced** in `saveBizVoucher`. |
+
+**Quick entries** (`BizEntryKind`) turn plain language into vouchers: *Capital invested,
+Drawings, Loan taken / repaid / given / recovered, Investment made / redeemed, Asset
+bought, Sale, Purchase, Sales/Purchase return, Income, Expense, Receive/Make payment,
+Cash ↔ Bank, Journal.* Each kind knows which ledger groups may sit on which side.
+Sales/purchase bills take items or a plain amount plus a GST rate, posted to Output/Input GST.
+
+**Reports are pure Dart** (`BizBook`, no SQL) and unit-tested:
+- Balance-sheet ledgers carry forward (opening + every voucher to date); P&L ledgers reset each period.
+- **Trial Balance** adds Opening Stock, earlier-period P&L and *Difference in opening balances* rows so it always agrees — as Tally does.
+- **Stock valuation:** once a company has items, opening/closing stock come from them automatically (weighted-average cost, at any date); otherwise the user types them.
+- **Balance Sheet** identity: `assets + closing stock = liabilities + P&L to date + opening difference` — tested across financial years.
+
+Backup: all six tables are in `exportAll`/`importAll` (pre-v30 backups simply have none).
+
+---
+
+## 10.6 Bookings — personalised by business type (schema v31)
+
+Opt-in per company (`biz_companies.bookings_enabled`), under Business Books.
+`biz_companies.business_type` picks a `BizBusinessType` template — *Accounting only,
+Wedding hall / Venue, Movie theatre, Hotel, Salon / Clinic, Rentals, Turf, Other* — which
+supplies the **wording** (Event / Ticket booking / Stay / Appointment; Hall / Screen / Room),
+**starter resources**, **slots** (sessions, show times), **custom form fields** and the
+**rate basis** (per day / per night / per seat / per booking). Templates only seed what is
+empty; everything is editable in *Business type & bookings*.
+
+| Table | Notes |
+|---|---|
+| `biz_booking_resources` | What can be booked. **Exclusive** (a hall: one booking per slot) or **shared** (a screen: sells up to `capacity` units per slot). |
+| `biz_bookings` | Customer, dates (multi-day for venues/hotels), slot, status (Enquiry → Tentative → Confirmed → Completed / Cancelled), people, total, custom-field values as JSON. |
+| `biz_booking_lines` | Resources on a booking, with qty and rate. |
+| `biz_vouchers.booking_id` | Links money to a booking (plain int — deleting a booking never deletes cash). |
+
+Rules (`BookingBook`, pure Dart, tested): *Full day* clashes with every slot; Enquiry and
+Cancelled hold nothing; conflicts are checked on every day of a multi-day booking.
+**Money:** *Receive payment* = Receipt (Dr Cash/Bank, Cr customer under Sundry Debtors);
+*Post bill* = Sales voucher to the type's income ledger (Hall Rent, Ticket Sales, …);
+balance due = total − receipts + refunds.
+
+---
+
 ## 11.5 Audit — 8 defects found and fixed
 
 An adversarial audit (6 lenses × 3 independent skeptics per finding, skeptics defaulting to
