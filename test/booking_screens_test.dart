@@ -128,6 +128,21 @@ void main() {
     });
   }
 
+  testWidgets('calendar shows the month, its numbers, and the day by session', (tester) async {
+    await tester.runAsync(() => seed(BizBusinessType.venue));
+    await pump(tester, const BookingsScreen());
+    expect(find.text('Occupancy'), findsOneWidget);
+    expect(find.text('Booked'), findsWidgets);
+    expect(find.text('Morning'), findsWidgets);
+    expect(find.text('Evening'), findsWidgets);
+    expect(find.text('Full'), findsOneWidget); // legend end
+    // Next month via the chevron, and the agenda follows the selection.
+    await tester.tap(find.byTooltip('Next month'));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    await unmount(tester);
+  });
+
   testWidgets('first-run setup offers business types', (tester) async {
     await pump(tester, const BusinessHomeScreen());
     expect(find.text('WHAT KIND OF BUSINESS?'), findsOneWidget);

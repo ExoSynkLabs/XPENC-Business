@@ -163,6 +163,58 @@ class BookingBook {
     return (state: state, used: used, capacity: capacity, bookings: holders);
   }
 
+  /// How full [day] is, 0–1: units taken over units on offer across every
+  /// active resource and slot. A full-day booking takes every slot it
+  /// clashes with, so it counts in each. When the business has real
+  /// sessions besides "Full day", the full-day slot itself isn't counted
+  /// again (it overlaps them all).
+  double occupancy(DateTime day, List<String> slots) {
+    final counted = slots.length > 1
+        ? slots.where((s) => s != kFullDay).toList()
+        : slots;
+    var offered = 0, used = 0;
+    for (final r in activeResources) {
+      for (final slot in counted) {
+        final a = availability(r, day, slot);
+        offered += a.capacity;
+        used += a.used > a.capacity ? a.capacity : a.used;
+      }
+    }
+    return offered == 0 ? 0 : used / offered;
+  }
+
+  /// Blocking bookings touching any day of [month], plus money figures.
+  ({int bookings, int enquiries, Money booked, Money due, double occupancy})
+  monthSummary(DateTime month, List<String> slots, BizBook? books) {
+    final first = DateTime(month.year, month.month);
+    final last = DateTime(month.year, month.month + 1, 0);
+    var count = 0, enquiries = 0, booked = 0, due = 0;
+    for (final b in bookings) {
+      if (!datesOverlap(b.startDate, b.endDate, first, last)) continue;
+      if (b.status == BizBookingStatus.enquiry) enquiries++;
+      if (!b.status.blocks) continue;
+      count++;
+      booked += b.totalAmount.paise;
+      final d = moneyOf(b, books).due;
+      if (d.isPositive) due += d.paise;
+    }
+    var occ = 0.0;
+    for (
+      var d = first;
+      !d.isAfter(last);
+      d = DateTime(d.year, d.month, d.day + 1)
+    ) {
+      occ += occupancy(d, slots);
+    }
+    return (
+      bookings: count,
+      enquiries: enquiries,
+      booked: Money(booked),
+      due: Money(due),
+      occupancy: occ / last.day,
+    );
+  }
+
   /// Every reason a booking can't hold these resources. Empty = OK.
   /// Enquiries and cancellations never conflict — they hold nothing.
   List<String> conflicts({

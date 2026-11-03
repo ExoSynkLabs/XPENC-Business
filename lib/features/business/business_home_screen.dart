@@ -25,6 +25,7 @@ import 'booking/booking_providers.dart';
 import 'booking/booking_setup_screen.dart';
 import 'booking/bookings_screen.dart';
 import 'booking/business_types.dart';
+import 'trend_chart.dart';
 import 'voucher_entry_screen.dart';
 
 /// XPENC Business — Tally-style books for a small business, built for a
@@ -235,6 +236,8 @@ class _BusinessDashboard extends ConsumerWidget {
                 ),
               ),
               // ── Position ──
+              const BizSectionLabel('Last 6 months'),
+              TrendChart(flows: monthlyFlows(book, DateTime.now())),
               const BizSectionLabel('This period'),
               _StatGrid(
                 stats: [

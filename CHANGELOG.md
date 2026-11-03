@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Release process: see [docs/RELEASING.md](docs/RELEASING.md).
 
+## XPENC Business [1.2.0] — 2026-11-03
+
+### Added
+- **A new bookings calendar.** A full month at a glance: every day is
+  shaded by how full it is (one-hue heat scale, four steps, legend from
+  Free to Full), with a booking count, an enquiry marker and a today ring.
+  Swipe or use the arrows to change month; "Today" and "Jump to date" are
+  one tap away. Above the grid, the month in four numbers — bookings,
+  occupancy, booked value and balance due.
+- **The day, session by session.** Pick a day to see each session (Morning,
+  Evening, Full day, show times…) as its own card: booked events with a
+  status stripe, people and balance due, and every still-free hall, screen
+  or room as a dashed "+" chip that opens a prefilled booking.
+- **Income vs costs, last 6 months** on Home — grouped columns with a
+  legend; tap a month to read its income, costs and surplus.
+- Upcoming, Enquiries and All lists are grouped under date headings, with
+  redesigned booking cards (status stripe, place, people, Due or Paid).
+
 ## XPENC Business [1.1.0] — 2026-11-03
 
 XPENC Business is now **only** a business app — the personal XPENC features

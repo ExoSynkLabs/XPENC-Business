@@ -226,6 +226,34 @@ void main() {
     );
   });
 
+  test('occupancy and month summary', () async {
+    final (co, book) = await venue();
+    final slots = ['Morning', 'Evening', kFullDay];
+    await db.saveBooking(
+      draft(co, [BookingLineDraft(resourceId: res(book, 'Main Hall'))], slot: 'Evening'),
+    );
+    await db.saveBooking(
+      draft(co, [BookingLineDraft(resourceId: res(book, 'Lawn'))], name: 'Full-day lawn'),
+    );
+    await db.saveBooking(
+      draft(
+        co,
+        [BookingLineDraft(resourceId: res(book, 'Dining Hall'))],
+        status: BizBookingStatus.enquiry,
+        name: 'Maybe',
+      ),
+    );
+    final b = await db.loadBookingBook(co);
+    // 3 halls × 2 sessions = 6; Main Hall evening + Lawn both sessions = 3.
+    expect(b.occupancy(day, slots), closeTo(0.5, 1e-9));
+    expect(b.occupancy(day.add(const Duration(days: 1)), slots), 0);
+    final m = b.monthSummary(day, slots, null);
+    expect(m.bookings, 2);
+    expect(m.enquiries, 1);
+    expect(m.booked, rs(140000));
+    expect(m.occupancy, closeTo(0.5 / 31, 1e-9));
+  });
+
   test('rates multiply by days or nights', () {
     final a = DateTime(2026, 1, 1), b = DateTime(2026, 1, 3);
     expect(rateMultiplier(RateBasis.perDay, a, b), 3);
