@@ -5,6 +5,8 @@ import '../../data/business_tables.dart';
 import '../../data/database.dart';
 import 'biz_book.dart';
 import 'biz_posting.dart';
+import 'booking/booking_repository.dart';
+import 'booking/business_types.dart';
 
 /// Everything a voucher needs to be saved (new or edited).
 class BizVoucherDraft {
@@ -18,6 +20,7 @@ class BizVoucherDraft {
     this.narration,
     this.reference,
     this.entryKind,
+    this.bookingId,
   });
 
   final int? id;
@@ -29,6 +32,7 @@ class BizVoucherDraft {
   final String? narration;
   final String? reference;
   final String? entryKind;
+  final int? bookingId;
 }
 
 /// Ledgers every new company starts with, so the first entry needs no setup.
@@ -92,6 +96,8 @@ extension BizRepository on AppDatabase {
     int fyStartMonth = 4,
     String? bankName,
     Money openingCash = const Money.zero(),
+    BizBusinessType businessType = BizBusinessType.general,
+    bool? bookingsEnabled,
   }) => transaction(() async {
     final id = await into(bizCompanies).insert(
       BizCompaniesCompanion.insert(
@@ -100,8 +106,11 @@ extension BizRepository on AppDatabase {
         phone: Value(_blankToNull(phone)),
         gstin: Value(_blankToNull(gstin)),
         fyStartMonth: Value(fyStartMonth),
+        businessType: Value(businessType.name),
+        bookingsEnabled: Value(bookingsEnabled ?? businessType.defaultBookings),
       ),
     );
+    await applyBusinessTemplate(id, businessType);
     for (final (ledgerName, group, key) in _defaultLedgers) {
       await into(bizLedgers).insert(
         BizLedgersCompanion.insert(
@@ -163,6 +172,16 @@ extension BizRepository on AppDatabase {
       bizVoucherLines,
     )..where((t) => t.voucherId.isInQuery(voucherIds))).go();
     await (delete(bizVouchers)..where((t) => t.companyId.equals(id))).go();
+    final bookingIds = selectOnly(bizBookings)
+      ..addColumns([bizBookings.id])
+      ..where(bizBookings.companyId.equals(id));
+    await (delete(
+      bizBookingLines,
+    )..where((t) => t.bookingId.isInQuery(bookingIds))).go();
+    await (delete(bizBookings)..where((t) => t.companyId.equals(id))).go();
+    await (delete(
+      bizBookingResources,
+    )..where((t) => t.companyId.equals(id))).go();
     await (delete(bizItems)..where((t) => t.companyId.equals(id))).go();
     await (delete(bizLedgers)..where((t) => t.companyId.equals(id))).go();
     await (delete(bizCompanies)..where((t) => t.id.equals(id))).go();
@@ -367,6 +386,7 @@ extension BizRepository on AppDatabase {
             narration: Value(_blankToNull(draft.narration)),
             reference: Value(_blankToNull(draft.reference)),
             entryKind: Value(draft.entryKind),
+            bookingId: Value(draft.bookingId),
           ),
         );
       } else {
@@ -386,6 +406,7 @@ extension BizRepository on AppDatabase {
             narration: Value(_blankToNull(draft.narration)),
             reference: Value(_blankToNull(draft.reference)),
             entryKind: Value(draft.entryKind),
+            bookingId: Value(draft.bookingId),
             updatedAt: Value(DateTime.now()),
           ),
         );

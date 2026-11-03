@@ -572,6 +572,31 @@ Backup: all six tables are in `exportAll`/`importAll` (pre-v30 backups simply ha
 
 ---
 
+## 10.6 Bookings — personalised by business type (schema v31)
+
+Opt-in per company (`biz_companies.bookings_enabled`), under Business Books.
+`biz_companies.business_type` picks a `BizBusinessType` template — *Accounting only,
+Wedding hall / Venue, Movie theatre, Hotel, Salon / Clinic, Rentals, Turf, Other* — which
+supplies the **wording** (Event / Ticket booking / Stay / Appointment; Hall / Screen / Room),
+**starter resources**, **slots** (sessions, show times), **custom form fields** and the
+**rate basis** (per day / per night / per seat / per booking). Templates only seed what is
+empty; everything is editable in *Business type & bookings*.
+
+| Table | Notes |
+|---|---|
+| `biz_booking_resources` | What can be booked. **Exclusive** (a hall: one booking per slot) or **shared** (a screen: sells up to `capacity` units per slot). |
+| `biz_bookings` | Customer, dates (multi-day for venues/hotels), slot, status (Enquiry → Tentative → Confirmed → Completed / Cancelled), people, total, custom-field values as JSON. |
+| `biz_booking_lines` | Resources on a booking, with qty and rate. |
+| `biz_vouchers.booking_id` | Links money to a booking (plain int — deleting a booking never deletes cash). |
+
+Rules (`BookingBook`, pure Dart, tested): *Full day* clashes with every slot; Enquiry and
+Cancelled hold nothing; conflicts are checked on every day of a multi-day booking.
+**Money:** *Receive payment* = Receipt (Dr Cash/Bank, Cr customer under Sundry Debtors);
+*Post bill* = Sales voucher to the type's income ledger (Hall Rent, Ticket Sales, …);
+balance due = total − receipts + refunds.
+
+---
+
 ## 11.5 Audit — 8 defects found and fixed
 
 An adversarial audit (6 lenses × 3 independent skeptics per finding, skeptics defaulting to

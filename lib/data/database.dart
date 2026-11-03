@@ -142,6 +142,9 @@ typedef CombinedStatementLine = ({
     BizVouchers,
     BizVoucherLines,
     BizVoucherItems,
+    BizBookingResources,
+    BizBookings,
+    BizBookingLines,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -167,7 +170,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -331,6 +334,21 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(bizVoucherLines);
         await m.createTable(bizVoucherItems);
         await _addColumnIfMissing(m, settings, settings.activeBizCompanyId);
+      }
+      if (from < 31) {
+        // Bookings module + business types.
+        await _addColumnIfMissing(m, bizCompanies, bizCompanies.businessType);
+        await _addColumnIfMissing(
+          m,
+          bizCompanies,
+          bizCompanies.bookingsEnabled,
+        );
+        await _addColumnIfMissing(m, bizCompanies, bizCompanies.bookingSlots);
+        await _addColumnIfMissing(m, bizCompanies, bizCompanies.bookingFields);
+        await _addColumnIfMissing(m, bizVouchers, bizVouchers.bookingId);
+        await m.createTable(bizBookingResources);
+        await m.createTable(bizBookings);
+        await m.createTable(bizBookingLines);
       }
     },
     beforeOpen: (details) async {
@@ -3506,6 +3524,11 @@ class AppDatabase extends _$AppDatabase {
       'bizVouchers': (await select(bizVouchers).get()).map(m).toList(),
       'bizVoucherLines': (await select(bizVoucherLines).get()).map(m).toList(),
       'bizVoucherItems': (await select(bizVoucherItems).get()).map(m).toList(),
+      'bizBookingResources': (await select(
+        bizBookingResources,
+      ).get()).map(m).toList(),
+      'bizBookings': (await select(bizBookings).get()).map(m).toList(),
+      'bizBookingLines': (await select(bizBookingLines).get()).map(m).toList(),
       'settings': (await select(settings).get()).map(m).toList(),
     };
   }
@@ -3577,6 +3600,9 @@ class AppDatabase extends _$AppDatabase {
       await delete(shoppingLists).go();
       // Business Books: children (lines/items) before vouchers, vouchers
       // before ledgers/items, all of them before companies.
+      await delete(bizBookingLines).go();
+      await delete(bizBookings).go();
+      await delete(bizBookingResources).go();
       await delete(bizVoucherItems).go();
       await delete(bizVoucherLines).go();
       await delete(bizVouchers).go();
@@ -3663,6 +3689,9 @@ class AppDatabase extends _$AppDatabase {
       await load(bizCompanies, 'bizCompanies');
       await load(bizLedgers, 'bizLedgers');
       await load(bizItems, 'bizItems');
+      await load(bizBookingResources, 'bizBookingResources');
+      await load(bizBookings, 'bizBookings');
+      await load(bizBookingLines, 'bizBookingLines');
       await load(bizVouchers, 'bizVouchers');
       await load(bizVoucherLines, 'bizVoucherLines');
       await load(bizVoucherItems, 'bizVoucherItems');

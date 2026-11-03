@@ -96,6 +96,23 @@ enum BizVoucherType {
   final String prefix;
 }
 
+/// Lifecycle of a booking. Only [enquiry] and [cancelled] leave the
+/// resource free for someone else.
+enum BizBookingStatus {
+  enquiry('Enquiry'),
+  tentative('Tentative'),
+  confirmed('Confirmed'),
+  completed('Completed'),
+  cancelled('Cancelled');
+
+  const BizBookingStatus(this.label);
+  final String label;
+
+  /// Does this booking hold its resources (block double-booking)?
+  bool get blocks =>
+      this == tentative || this == confirmed || this == completed;
+}
+
 /// One business — Tally's "company". Every ledger, item and voucher belongs
 /// to exactly one, so a user can keep several businesses side by side.
 @DataClassName('BizCompanyRow')
@@ -118,6 +135,22 @@ class BizCompanies extends Table {
   /// Entered by the user, or copied from the stock summary.
   IntColumn get closingStock =>
       integer().map(const MoneyConverter()).withDefault(const Constant(0))();
+
+  /// `BizBusinessType.name` — drives the bookings template and the wording
+  /// across the module (Event / Show / Stay …). Text, not an enum column, so
+  /// a type added later never breaks an older database.
+  TextColumn get businessType =>
+      text().withDefault(const Constant('general'))();
+
+  /// The Bookings module is opt-in per company.
+  BoolColumn get bookingsEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// JSON list of slot names ("Morning", "Evening", "Full day", "10:00 AM").
+  TextColumn get bookingSlots => text().nullable()();
+
+  /// JSON list of custom booking fields — see `BookingField`.
+  TextColumn get bookingFields => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -182,6 +215,10 @@ class BizVouchers extends Table {
   /// ...), so editing reopens the same friendly form. Null = raw journal.
   TextColumn get entryKind => text().nullable()();
 
+  /// The booking this voucher belongs to (an advance received, the final
+  /// bill). Plain int, not a foreign key: deleting a booking keeps its money.
+  IntColumn get bookingId => integer().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -208,4 +245,74 @@ class BizVoucherItems extends Table {
   RealColumn get qty => real()();
   IntColumn get rate => integer().map(const MoneyConverter())();
   IntColumn get amount => integer().map(const MoneyConverter())();
+}
+
+// ─── Bookings ───────────────────────────────────────────────────────────────
+
+/// Something that can be booked: a hall, a lawn, a screen, a room, a chair,
+/// a court, a vehicle.
+///
+/// An **exclusive** resource is taken whole by one booking per slot (a hall).
+/// A **shared** resource sells up to [capacity] units per slot (a cinema
+/// screen's seats).
+@DataClassName('BizBookingResourceRow')
+class BizBookingResources extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get companyId => integer().references(BizCompanies, #id)();
+  TextColumn get name => text().withLength(min: 1, max: 120)();
+
+  /// Exclusive: guests it holds (a warning only). Shared: units on sale.
+  IntColumn get capacity => integer().withDefault(const Constant(0))();
+  BoolColumn get shared => boolean().withDefault(const Constant(false))();
+
+  /// Default price — per day, per night, per seat or per booking, by type.
+  IntColumn get rate =>
+      integer().map(const MoneyConverter()).withDefault(const Constant(0))();
+  IntColumn get sort => integer().withDefault(const Constant(0))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+}
+
+@DataClassName('BizBookingRow')
+class BizBookings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get companyId => integer().references(BizCompanies, #id)();
+  IntColumn get number => integer()();
+  TextColumn get customerName => text().withLength(min: 1, max: 120)();
+  TextColumn get phone => text().nullable()();
+
+  /// "Sharma–Patil wedding", a movie name, … optional.
+  TextColumn get title => text().nullable()();
+  DateTimeColumn get startDate => dateTime()();
+
+  /// Same as [startDate] for single-day bookings.
+  DateTimeColumn get endDate => dateTime()();
+  TextColumn get slot => text().withDefault(const Constant('Full day'))();
+  TextColumn get status => textEnum<BizBookingStatus>()();
+
+  /// Expected people / guests / adults.
+  IntColumn get guests => integer().withDefault(const Constant(0))();
+  IntColumn get totalAmount =>
+      integer().map(const MoneyConverter()).withDefault(const Constant(0))();
+
+  /// The customer's ledger in the books, created on first payment.
+  IntColumn get partyLedgerId => integer().nullable()();
+
+  /// Values of the company's custom fields, as a JSON object.
+  TextColumn get extra => text().withDefault(const Constant('{}'))();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A resource taken by a booking — with how many units for a shared one.
+@DataClassName('BizBookingLineRow')
+class BizBookingLines extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get bookingId => integer().references(BizBookings, #id)();
+  IntColumn get resourceId => integer().references(BizBookingResources, #id)();
+  IntColumn get qty => integer().withDefault(const Constant(1))();
+  IntColumn get rate =>
+      integer().map(const MoneyConverter()).withDefault(const Constant(0))();
+  IntColumn get amount =>
+      integer().map(const MoneyConverter()).withDefault(const Constant(0))();
 }

@@ -12378,6 +12378,55 @@ class $BizCompaniesTable extends BizCompanies
         requiredDuringInsert: false,
         defaultValue: const Constant(0),
       ).withConverter<Money>($BizCompaniesTable.$converterclosingStock);
+  static const VerificationMeta _businessTypeMeta = const VerificationMeta(
+    'businessType',
+  );
+  @override
+  late final GeneratedColumn<String> businessType = GeneratedColumn<String>(
+    'business_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('general'),
+  );
+  static const VerificationMeta _bookingsEnabledMeta = const VerificationMeta(
+    'bookingsEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> bookingsEnabled = GeneratedColumn<bool>(
+    'bookings_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("bookings_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _bookingSlotsMeta = const VerificationMeta(
+    'bookingSlots',
+  );
+  @override
+  late final GeneratedColumn<String> bookingSlots = GeneratedColumn<String>(
+    'booking_slots',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bookingFieldsMeta = const VerificationMeta(
+    'bookingFields',
+  );
+  @override
+  late final GeneratedColumn<String> bookingFields = GeneratedColumn<String>(
+    'booking_fields',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12400,6 +12449,10 @@ class $BizCompaniesTable extends BizCompanies
     fyStartMonth,
     openingStock,
     closingStock,
+    businessType,
+    bookingsEnabled,
+    bookingSlots,
+    bookingFields,
     createdAt,
   ];
   @override
@@ -12449,6 +12502,42 @@ class $BizCompaniesTable extends BizCompanies
         fyStartMonth.isAcceptableOrUnknown(
           data['fy_start_month']!,
           _fyStartMonthMeta,
+        ),
+      );
+    }
+    if (data.containsKey('business_type')) {
+      context.handle(
+        _businessTypeMeta,
+        businessType.isAcceptableOrUnknown(
+          data['business_type']!,
+          _businessTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bookings_enabled')) {
+      context.handle(
+        _bookingsEnabledMeta,
+        bookingsEnabled.isAcceptableOrUnknown(
+          data['bookings_enabled']!,
+          _bookingsEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('booking_slots')) {
+      context.handle(
+        _bookingSlotsMeta,
+        bookingSlots.isAcceptableOrUnknown(
+          data['booking_slots']!,
+          _bookingSlotsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('booking_fields')) {
+      context.handle(
+        _bookingFieldsMeta,
+        bookingFields.isAcceptableOrUnknown(
+          data['booking_fields']!,
+          _bookingFieldsMeta,
         ),
       );
     }
@@ -12503,6 +12592,22 @@ class $BizCompaniesTable extends BizCompanies
           data['${effectivePrefix}closing_stock'],
         )!,
       ),
+      businessType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}business_type'],
+      )!,
+      bookingsEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}bookings_enabled'],
+      )!,
+      bookingSlots: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}booking_slots'],
+      ),
+      bookingFields: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}booking_fields'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -12538,6 +12643,20 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
   /// Value of stock on hand now (feeds gross profit and the balance sheet).
   /// Entered by the user, or copied from the stock summary.
   final Money closingStock;
+
+  /// `BizBusinessType.name` — drives the bookings template and the wording
+  /// across the module (Event / Show / Stay …). Text, not an enum column, so
+  /// a type added later never breaks an older database.
+  final String businessType;
+
+  /// The Bookings module is opt-in per company.
+  final bool bookingsEnabled;
+
+  /// JSON list of slot names ("Morning", "Evening", "Full day", "10:00 AM").
+  final String? bookingSlots;
+
+  /// JSON list of custom booking fields — see `BookingField`.
+  final String? bookingFields;
   final DateTime createdAt;
   const BizCompanyRow({
     required this.id,
@@ -12548,6 +12667,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
     required this.fyStartMonth,
     required this.openingStock,
     required this.closingStock,
+    required this.businessType,
+    required this.bookingsEnabled,
+    this.bookingSlots,
+    this.bookingFields,
     required this.createdAt,
   });
   @override
@@ -12575,6 +12698,14 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
         $BizCompaniesTable.$converterclosingStock.toSql(closingStock),
       );
     }
+    map['business_type'] = Variable<String>(businessType);
+    map['bookings_enabled'] = Variable<bool>(bookingsEnabled);
+    if (!nullToAbsent || bookingSlots != null) {
+      map['booking_slots'] = Variable<String>(bookingSlots);
+    }
+    if (!nullToAbsent || bookingFields != null) {
+      map['booking_fields'] = Variable<String>(bookingFields);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -12595,6 +12726,14 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
       fyStartMonth: Value(fyStartMonth),
       openingStock: Value(openingStock),
       closingStock: Value(closingStock),
+      businessType: Value(businessType),
+      bookingsEnabled: Value(bookingsEnabled),
+      bookingSlots: bookingSlots == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingSlots),
+      bookingFields: bookingFields == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingFields),
       createdAt: Value(createdAt),
     );
   }
@@ -12613,6 +12752,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
       fyStartMonth: serializer.fromJson<int>(json['fyStartMonth']),
       openingStock: serializer.fromJson<Money>(json['openingStock']),
       closingStock: serializer.fromJson<Money>(json['closingStock']),
+      businessType: serializer.fromJson<String>(json['businessType']),
+      bookingsEnabled: serializer.fromJson<bool>(json['bookingsEnabled']),
+      bookingSlots: serializer.fromJson<String?>(json['bookingSlots']),
+      bookingFields: serializer.fromJson<String?>(json['bookingFields']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -12628,6 +12771,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
       'fyStartMonth': serializer.toJson<int>(fyStartMonth),
       'openingStock': serializer.toJson<Money>(openingStock),
       'closingStock': serializer.toJson<Money>(closingStock),
+      'businessType': serializer.toJson<String>(businessType),
+      'bookingsEnabled': serializer.toJson<bool>(bookingsEnabled),
+      'bookingSlots': serializer.toJson<String?>(bookingSlots),
+      'bookingFields': serializer.toJson<String?>(bookingFields),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -12641,6 +12788,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
     int? fyStartMonth,
     Money? openingStock,
     Money? closingStock,
+    String? businessType,
+    bool? bookingsEnabled,
+    Value<String?> bookingSlots = const Value.absent(),
+    Value<String?> bookingFields = const Value.absent(),
     DateTime? createdAt,
   }) => BizCompanyRow(
     id: id ?? this.id,
@@ -12651,6 +12802,12 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
     fyStartMonth: fyStartMonth ?? this.fyStartMonth,
     openingStock: openingStock ?? this.openingStock,
     closingStock: closingStock ?? this.closingStock,
+    businessType: businessType ?? this.businessType,
+    bookingsEnabled: bookingsEnabled ?? this.bookingsEnabled,
+    bookingSlots: bookingSlots.present ? bookingSlots.value : this.bookingSlots,
+    bookingFields: bookingFields.present
+        ? bookingFields.value
+        : this.bookingFields,
     createdAt: createdAt ?? this.createdAt,
   );
   BizCompanyRow copyWithCompanion(BizCompaniesCompanion data) {
@@ -12669,6 +12826,18 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
       closingStock: data.closingStock.present
           ? data.closingStock.value
           : this.closingStock,
+      businessType: data.businessType.present
+          ? data.businessType.value
+          : this.businessType,
+      bookingsEnabled: data.bookingsEnabled.present
+          ? data.bookingsEnabled.value
+          : this.bookingsEnabled,
+      bookingSlots: data.bookingSlots.present
+          ? data.bookingSlots.value
+          : this.bookingSlots,
+      bookingFields: data.bookingFields.present
+          ? data.bookingFields.value
+          : this.bookingFields,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -12684,6 +12853,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
           ..write('fyStartMonth: $fyStartMonth, ')
           ..write('openingStock: $openingStock, ')
           ..write('closingStock: $closingStock, ')
+          ..write('businessType: $businessType, ')
+          ..write('bookingsEnabled: $bookingsEnabled, ')
+          ..write('bookingSlots: $bookingSlots, ')
+          ..write('bookingFields: $bookingFields, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -12699,6 +12872,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
     fyStartMonth,
     openingStock,
     closingStock,
+    businessType,
+    bookingsEnabled,
+    bookingSlots,
+    bookingFields,
     createdAt,
   );
   @override
@@ -12713,6 +12890,10 @@ class BizCompanyRow extends DataClass implements Insertable<BizCompanyRow> {
           other.fyStartMonth == this.fyStartMonth &&
           other.openingStock == this.openingStock &&
           other.closingStock == this.closingStock &&
+          other.businessType == this.businessType &&
+          other.bookingsEnabled == this.bookingsEnabled &&
+          other.bookingSlots == this.bookingSlots &&
+          other.bookingFields == this.bookingFields &&
           other.createdAt == this.createdAt);
 }
 
@@ -12725,6 +12906,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
   final Value<int> fyStartMonth;
   final Value<Money> openingStock;
   final Value<Money> closingStock;
+  final Value<String> businessType;
+  final Value<bool> bookingsEnabled;
+  final Value<String?> bookingSlots;
+  final Value<String?> bookingFields;
   final Value<DateTime> createdAt;
   const BizCompaniesCompanion({
     this.id = const Value.absent(),
@@ -12735,6 +12920,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
     this.fyStartMonth = const Value.absent(),
     this.openingStock = const Value.absent(),
     this.closingStock = const Value.absent(),
+    this.businessType = const Value.absent(),
+    this.bookingsEnabled = const Value.absent(),
+    this.bookingSlots = const Value.absent(),
+    this.bookingFields = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   BizCompaniesCompanion.insert({
@@ -12746,6 +12935,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
     this.fyStartMonth = const Value.absent(),
     this.openingStock = const Value.absent(),
     this.closingStock = const Value.absent(),
+    this.businessType = const Value.absent(),
+    this.bookingsEnabled = const Value.absent(),
+    this.bookingSlots = const Value.absent(),
+    this.bookingFields = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name);
   static Insertable<BizCompanyRow> custom({
@@ -12757,6 +12950,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
     Expression<int>? fyStartMonth,
     Expression<int>? openingStock,
     Expression<int>? closingStock,
+    Expression<String>? businessType,
+    Expression<bool>? bookingsEnabled,
+    Expression<String>? bookingSlots,
+    Expression<String>? bookingFields,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -12768,6 +12965,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
       if (fyStartMonth != null) 'fy_start_month': fyStartMonth,
       if (openingStock != null) 'opening_stock': openingStock,
       if (closingStock != null) 'closing_stock': closingStock,
+      if (businessType != null) 'business_type': businessType,
+      if (bookingsEnabled != null) 'bookings_enabled': bookingsEnabled,
+      if (bookingSlots != null) 'booking_slots': bookingSlots,
+      if (bookingFields != null) 'booking_fields': bookingFields,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -12781,6 +12982,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
     Value<int>? fyStartMonth,
     Value<Money>? openingStock,
     Value<Money>? closingStock,
+    Value<String>? businessType,
+    Value<bool>? bookingsEnabled,
+    Value<String?>? bookingSlots,
+    Value<String?>? bookingFields,
     Value<DateTime>? createdAt,
   }) {
     return BizCompaniesCompanion(
@@ -12792,6 +12997,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
       fyStartMonth: fyStartMonth ?? this.fyStartMonth,
       openingStock: openingStock ?? this.openingStock,
       closingStock: closingStock ?? this.closingStock,
+      businessType: businessType ?? this.businessType,
+      bookingsEnabled: bookingsEnabled ?? this.bookingsEnabled,
+      bookingSlots: bookingSlots ?? this.bookingSlots,
+      bookingFields: bookingFields ?? this.bookingFields,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -12827,6 +13036,18 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
         $BizCompaniesTable.$converterclosingStock.toSql(closingStock.value),
       );
     }
+    if (businessType.present) {
+      map['business_type'] = Variable<String>(businessType.value);
+    }
+    if (bookingsEnabled.present) {
+      map['bookings_enabled'] = Variable<bool>(bookingsEnabled.value);
+    }
+    if (bookingSlots.present) {
+      map['booking_slots'] = Variable<String>(bookingSlots.value);
+    }
+    if (bookingFields.present) {
+      map['booking_fields'] = Variable<String>(bookingFields.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -12844,6 +13065,10 @@ class BizCompaniesCompanion extends UpdateCompanion<BizCompanyRow> {
           ..write('fyStartMonth: $fyStartMonth, ')
           ..write('openingStock: $openingStock, ')
           ..write('closingStock: $closingStock, ')
+          ..write('businessType: $businessType, ')
+          ..write('bookingsEnabled: $bookingsEnabled, ')
+          ..write('bookingSlots: $bookingSlots, ')
+          ..write('bookingFields: $bookingFields, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -14207,6 +14432,17 @@ class $BizVouchersTable extends BizVouchers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _bookingIdMeta = const VerificationMeta(
+    'bookingId',
+  );
+  @override
+  late final GeneratedColumn<int> bookingId = GeneratedColumn<int>(
+    'booking_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -14241,6 +14477,7 @@ class $BizVouchersTable extends BizVouchers
     narration,
     reference,
     entryKind,
+    bookingId,
     createdAt,
     updatedAt,
   ];
@@ -14301,6 +14538,12 @@ class $BizVouchersTable extends BizVouchers
         entryKind.isAcceptableOrUnknown(data['entry_kind']!, _entryKindMeta),
       );
     }
+    if (data.containsKey('booking_id')) {
+      context.handle(
+        _bookingIdMeta,
+        bookingId.isAcceptableOrUnknown(data['booking_id']!, _bookingIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -14356,6 +14599,10 @@ class $BizVouchersTable extends BizVouchers
         DriftSqlType.string,
         data['${effectivePrefix}entry_kind'],
       ),
+      bookingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}booking_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -14392,6 +14639,10 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
   /// The quick-entry kind this voucher was made with (`sale`, `loanTaken`,
   /// ...), so editing reopens the same friendly form. Null = raw journal.
   final String? entryKind;
+
+  /// The booking this voucher belongs to (an advance received, the final
+  /// bill). Plain int, not a foreign key: deleting a booking keeps its money.
+  final int? bookingId;
   final DateTime createdAt;
   final DateTime updatedAt;
   const BizVoucherRow({
@@ -14403,6 +14654,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
     this.narration,
     this.reference,
     this.entryKind,
+    this.bookingId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -14427,6 +14679,9 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
     if (!nullToAbsent || entryKind != null) {
       map['entry_kind'] = Variable<String>(entryKind);
     }
+    if (!nullToAbsent || bookingId != null) {
+      map['booking_id'] = Variable<int>(bookingId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -14448,6 +14703,9 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
       entryKind: entryKind == null && nullToAbsent
           ? const Value.absent()
           : Value(entryKind),
+      bookingId: bookingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookingId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -14469,6 +14727,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
       narration: serializer.fromJson<String?>(json['narration']),
       reference: serializer.fromJson<String?>(json['reference']),
       entryKind: serializer.fromJson<String?>(json['entryKind']),
+      bookingId: serializer.fromJson<int?>(json['bookingId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -14487,6 +14746,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
       'narration': serializer.toJson<String?>(narration),
       'reference': serializer.toJson<String?>(reference),
       'entryKind': serializer.toJson<String?>(entryKind),
+      'bookingId': serializer.toJson<int?>(bookingId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -14501,6 +14761,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
     Value<String?> narration = const Value.absent(),
     Value<String?> reference = const Value.absent(),
     Value<String?> entryKind = const Value.absent(),
+    Value<int?> bookingId = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => BizVoucherRow(
@@ -14512,6 +14773,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
     narration: narration.present ? narration.value : this.narration,
     reference: reference.present ? reference.value : this.reference,
     entryKind: entryKind.present ? entryKind.value : this.entryKind,
+    bookingId: bookingId.present ? bookingId.value : this.bookingId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -14525,6 +14787,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
       narration: data.narration.present ? data.narration.value : this.narration,
       reference: data.reference.present ? data.reference.value : this.reference,
       entryKind: data.entryKind.present ? data.entryKind.value : this.entryKind,
+      bookingId: data.bookingId.present ? data.bookingId.value : this.bookingId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -14541,6 +14804,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
           ..write('narration: $narration, ')
           ..write('reference: $reference, ')
           ..write('entryKind: $entryKind, ')
+          ..write('bookingId: $bookingId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -14557,6 +14821,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
     narration,
     reference,
     entryKind,
+    bookingId,
     createdAt,
     updatedAt,
   );
@@ -14572,6 +14837,7 @@ class BizVoucherRow extends DataClass implements Insertable<BizVoucherRow> {
           other.narration == this.narration &&
           other.reference == this.reference &&
           other.entryKind == this.entryKind &&
+          other.bookingId == this.bookingId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -14585,6 +14851,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
   final Value<String?> narration;
   final Value<String?> reference;
   final Value<String?> entryKind;
+  final Value<int?> bookingId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const BizVouchersCompanion({
@@ -14596,6 +14863,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
     this.narration = const Value.absent(),
     this.reference = const Value.absent(),
     this.entryKind = const Value.absent(),
+    this.bookingId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -14608,6 +14876,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
     this.narration = const Value.absent(),
     this.reference = const Value.absent(),
     this.entryKind = const Value.absent(),
+    this.bookingId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : companyId = Value(companyId),
@@ -14623,6 +14892,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
     Expression<String>? narration,
     Expression<String>? reference,
     Expression<String>? entryKind,
+    Expression<int>? bookingId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -14635,6 +14905,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
       if (narration != null) 'narration': narration,
       if (reference != null) 'reference': reference,
       if (entryKind != null) 'entry_kind': entryKind,
+      if (bookingId != null) 'booking_id': bookingId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -14649,6 +14920,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
     Value<String?>? narration,
     Value<String?>? reference,
     Value<String?>? entryKind,
+    Value<int?>? bookingId,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -14661,6 +14933,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
       narration: narration ?? this.narration,
       reference: reference ?? this.reference,
       entryKind: entryKind ?? this.entryKind,
+      bookingId: bookingId ?? this.bookingId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -14695,6 +14968,9 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
     if (entryKind.present) {
       map['entry_kind'] = Variable<String>(entryKind.value);
     }
+    if (bookingId.present) {
+      map['booking_id'] = Variable<int>(bookingId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -14715,6 +14991,7 @@ class BizVouchersCompanion extends UpdateCompanion<BizVoucherRow> {
           ..write('narration: $narration, ')
           ..write('reference: $reference, ')
           ..write('entryKind: $entryKind, ')
+          ..write('bookingId: $bookingId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -15481,6 +15758,1868 @@ class BizVoucherItemsCompanion extends UpdateCompanion<BizVoucherItemRow> {
   }
 }
 
+class $BizBookingResourcesTable extends BizBookingResources
+    with TableInfo<$BizBookingResourcesTable, BizBookingResourceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingResourcesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capacityMeta = const VerificationMeta(
+    'capacity',
+  );
+  @override
+  late final GeneratedColumn<int> capacity = GeneratedColumn<int>(
+    'capacity',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sharedMeta = const VerificationMeta('shared');
+  @override
+  late final GeneratedColumn<bool> shared = GeneratedColumn<bool>(
+    'shared',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("shared" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> rate =
+      GeneratedColumn<int>(
+        'rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingResourcesTable.$converterrate);
+  static const VerificationMeta _sortMeta = const VerificationMeta('sort');
+  @override
+  late final GeneratedColumn<int> sort = GeneratedColumn<int>(
+    'sort',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    name,
+    capacity,
+    shared,
+    rate,
+    sort,
+    isArchived,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_booking_resources';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingResourceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('capacity')) {
+      context.handle(
+        _capacityMeta,
+        capacity.isAcceptableOrUnknown(data['capacity']!, _capacityMeta),
+      );
+    }
+    if (data.containsKey('shared')) {
+      context.handle(
+        _sharedMeta,
+        shared.isAcceptableOrUnknown(data['shared']!, _sharedMeta),
+      );
+    }
+    if (data.containsKey('sort')) {
+      context.handle(
+        _sortMeta,
+        sort.isAcceptableOrUnknown(data['sort']!, _sortMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingResourceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingResourceRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      capacity: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}capacity'],
+      )!,
+      shared: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}shared'],
+      )!,
+      rate: $BizBookingResourcesTable.$converterrate.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}rate'],
+        )!,
+      ),
+      sort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+    );
+  }
+
+  @override
+  $BizBookingResourcesTable createAlias(String alias) {
+    return $BizBookingResourcesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterrate = const MoneyConverter();
+}
+
+class BizBookingResourceRow extends DataClass
+    implements Insertable<BizBookingResourceRow> {
+  final int id;
+  final int companyId;
+  final String name;
+
+  /// Exclusive: guests it holds (a warning only). Shared: units on sale.
+  final int capacity;
+  final bool shared;
+
+  /// Default price — per day, per night, per seat or per booking, by type.
+  final Money rate;
+  final int sort;
+  final bool isArchived;
+  const BizBookingResourceRow({
+    required this.id,
+    required this.companyId,
+    required this.name,
+    required this.capacity,
+    required this.shared,
+    required this.rate,
+    required this.sort,
+    required this.isArchived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['name'] = Variable<String>(name);
+    map['capacity'] = Variable<int>(capacity);
+    map['shared'] = Variable<bool>(shared);
+    {
+      map['rate'] = Variable<int>(
+        $BizBookingResourcesTable.$converterrate.toSql(rate),
+      );
+    }
+    map['sort'] = Variable<int>(sort);
+    map['is_archived'] = Variable<bool>(isArchived);
+    return map;
+  }
+
+  BizBookingResourcesCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingResourcesCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      name: Value(name),
+      capacity: Value(capacity),
+      shared: Value(shared),
+      rate: Value(rate),
+      sort: Value(sort),
+      isArchived: Value(isArchived),
+    );
+  }
+
+  factory BizBookingResourceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingResourceRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      name: serializer.fromJson<String>(json['name']),
+      capacity: serializer.fromJson<int>(json['capacity']),
+      shared: serializer.fromJson<bool>(json['shared']),
+      rate: serializer.fromJson<Money>(json['rate']),
+      sort: serializer.fromJson<int>(json['sort']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'name': serializer.toJson<String>(name),
+      'capacity': serializer.toJson<int>(capacity),
+      'shared': serializer.toJson<bool>(shared),
+      'rate': serializer.toJson<Money>(rate),
+      'sort': serializer.toJson<int>(sort),
+      'isArchived': serializer.toJson<bool>(isArchived),
+    };
+  }
+
+  BizBookingResourceRow copyWith({
+    int? id,
+    int? companyId,
+    String? name,
+    int? capacity,
+    bool? shared,
+    Money? rate,
+    int? sort,
+    bool? isArchived,
+  }) => BizBookingResourceRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    name: name ?? this.name,
+    capacity: capacity ?? this.capacity,
+    shared: shared ?? this.shared,
+    rate: rate ?? this.rate,
+    sort: sort ?? this.sort,
+    isArchived: isArchived ?? this.isArchived,
+  );
+  BizBookingResourceRow copyWithCompanion(BizBookingResourcesCompanion data) {
+    return BizBookingResourceRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      name: data.name.present ? data.name.value : this.name,
+      capacity: data.capacity.present ? data.capacity.value : this.capacity,
+      shared: data.shared.present ? data.shared.value : this.shared,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      sort: data.sort.present ? data.sort.value : this.sort,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingResourceRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('capacity: $capacity, ')
+          ..write('shared: $shared, ')
+          ..write('rate: $rate, ')
+          ..write('sort: $sort, ')
+          ..write('isArchived: $isArchived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    name,
+    capacity,
+    shared,
+    rate,
+    sort,
+    isArchived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingResourceRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.name == this.name &&
+          other.capacity == this.capacity &&
+          other.shared == this.shared &&
+          other.rate == this.rate &&
+          other.sort == this.sort &&
+          other.isArchived == this.isArchived);
+}
+
+class BizBookingResourcesCompanion
+    extends UpdateCompanion<BizBookingResourceRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<String> name;
+  final Value<int> capacity;
+  final Value<bool> shared;
+  final Value<Money> rate;
+  final Value<int> sort;
+  final Value<bool> isArchived;
+  const BizBookingResourcesCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.capacity = const Value.absent(),
+    this.shared = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.isArchived = const Value.absent(),
+  });
+  BizBookingResourcesCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required String name,
+    this.capacity = const Value.absent(),
+    this.shared = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.sort = const Value.absent(),
+    this.isArchived = const Value.absent(),
+  }) : companyId = Value(companyId),
+       name = Value(name);
+  static Insertable<BizBookingResourceRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<String>? name,
+    Expression<int>? capacity,
+    Expression<bool>? shared,
+    Expression<int>? rate,
+    Expression<int>? sort,
+    Expression<bool>? isArchived,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (name != null) 'name': name,
+      if (capacity != null) 'capacity': capacity,
+      if (shared != null) 'shared': shared,
+      if (rate != null) 'rate': rate,
+      if (sort != null) 'sort': sort,
+      if (isArchived != null) 'is_archived': isArchived,
+    });
+  }
+
+  BizBookingResourcesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<String>? name,
+    Value<int>? capacity,
+    Value<bool>? shared,
+    Value<Money>? rate,
+    Value<int>? sort,
+    Value<bool>? isArchived,
+  }) {
+    return BizBookingResourcesCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      name: name ?? this.name,
+      capacity: capacity ?? this.capacity,
+      shared: shared ?? this.shared,
+      rate: rate ?? this.rate,
+      sort: sort ?? this.sort,
+      isArchived: isArchived ?? this.isArchived,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (capacity.present) {
+      map['capacity'] = Variable<int>(capacity.value);
+    }
+    if (shared.present) {
+      map['shared'] = Variable<bool>(shared.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<int>(
+        $BizBookingResourcesTable.$converterrate.toSql(rate.value),
+      );
+    }
+    if (sort.present) {
+      map['sort'] = Variable<int>(sort.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingResourcesCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('name: $name, ')
+          ..write('capacity: $capacity, ')
+          ..write('shared: $shared, ')
+          ..write('rate: $rate, ')
+          ..write('sort: $sort, ')
+          ..write('isArchived: $isArchived')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizBookingsTable extends BizBookings
+    with TableInfo<$BizBookingsTable, BizBookingRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _companyIdMeta = const VerificationMeta(
+    'companyId',
+  );
+  @override
+  late final GeneratedColumn<int> companyId = GeneratedColumn<int>(
+    'company_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_companies (id)',
+    ),
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<int> number = GeneratedColumn<int>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _customerNameMeta = const VerificationMeta(
+    'customerName',
+  );
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+    'customer_name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _slotMeta = const VerificationMeta('slot');
+  @override
+  late final GeneratedColumn<String> slot = GeneratedColumn<String>(
+    'slot',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Full day'),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<BizBookingStatus, String> status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<BizBookingStatus>($BizBookingsTable.$converterstatus);
+  static const VerificationMeta _guestsMeta = const VerificationMeta('guests');
+  @override
+  late final GeneratedColumn<int> guests = GeneratedColumn<int>(
+    'guests',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> totalAmount =
+      GeneratedColumn<int>(
+        'total_amount',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingsTable.$convertertotalAmount);
+  static const VerificationMeta _partyLedgerIdMeta = const VerificationMeta(
+    'partyLedgerId',
+  );
+  @override
+  late final GeneratedColumn<int> partyLedgerId = GeneratedColumn<int>(
+    'party_ledger_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _extraMeta = const VerificationMeta('extra');
+  @override
+  late final GeneratedColumn<String> extra = GeneratedColumn<String>(
+    'extra',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    companyId,
+    number,
+    customerName,
+    phone,
+    title,
+    startDate,
+    endDate,
+    slot,
+    status,
+    guests,
+    totalAmount,
+    partyLedgerId,
+    extra,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_bookings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('company_id')) {
+      context.handle(
+        _companyIdMeta,
+        companyId.isAcceptableOrUnknown(data['company_id']!, _companyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_companyIdMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+        _customerNameMeta,
+        customerName.isAcceptableOrUnknown(
+          data['customer_name']!,
+          _customerNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_customerNameMeta);
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endDateMeta);
+    }
+    if (data.containsKey('slot')) {
+      context.handle(
+        _slotMeta,
+        slot.isAcceptableOrUnknown(data['slot']!, _slotMeta),
+      );
+    }
+    if (data.containsKey('guests')) {
+      context.handle(
+        _guestsMeta,
+        guests.isAcceptableOrUnknown(data['guests']!, _guestsMeta),
+      );
+    }
+    if (data.containsKey('party_ledger_id')) {
+      context.handle(
+        _partyLedgerIdMeta,
+        partyLedgerId.isAcceptableOrUnknown(
+          data['party_ledger_id']!,
+          _partyLedgerIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('extra')) {
+      context.handle(
+        _extraMeta,
+        extra.isAcceptableOrUnknown(data['extra']!, _extraMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      companyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}company_id'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number'],
+      )!,
+      customerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_name'],
+      )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      )!,
+      slot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}slot'],
+      )!,
+      status: $BizBookingsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
+      guests: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guests'],
+      )!,
+      totalAmount: $BizBookingsTable.$convertertotalAmount.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}total_amount'],
+        )!,
+      ),
+      partyLedgerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}party_ledger_id'],
+      ),
+      extra: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extra'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BizBookingsTable createAlias(String alias) {
+    return $BizBookingsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<BizBookingStatus, String, String> $converterstatus =
+      const EnumNameConverter<BizBookingStatus>(BizBookingStatus.values);
+  static TypeConverter<Money, int> $convertertotalAmount =
+      const MoneyConverter();
+}
+
+class BizBookingRow extends DataClass implements Insertable<BizBookingRow> {
+  final int id;
+  final int companyId;
+  final int number;
+  final String customerName;
+  final String? phone;
+
+  /// "Sharma–Patil wedding", a movie name, … optional.
+  final String? title;
+  final DateTime startDate;
+
+  /// Same as [startDate] for single-day bookings.
+  final DateTime endDate;
+  final String slot;
+  final BizBookingStatus status;
+
+  /// Expected people / guests / adults.
+  final int guests;
+  final Money totalAmount;
+
+  /// The customer's ledger in the books, created on first payment.
+  final int? partyLedgerId;
+
+  /// Values of the company's custom fields, as a JSON object.
+  final String extra;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const BizBookingRow({
+    required this.id,
+    required this.companyId,
+    required this.number,
+    required this.customerName,
+    this.phone,
+    this.title,
+    required this.startDate,
+    required this.endDate,
+    required this.slot,
+    required this.status,
+    required this.guests,
+    required this.totalAmount,
+    this.partyLedgerId,
+    required this.extra,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['company_id'] = Variable<int>(companyId);
+    map['number'] = Variable<int>(number);
+    map['customer_name'] = Variable<String>(customerName);
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['end_date'] = Variable<DateTime>(endDate);
+    map['slot'] = Variable<String>(slot);
+    {
+      map['status'] = Variable<String>(
+        $BizBookingsTable.$converterstatus.toSql(status),
+      );
+    }
+    map['guests'] = Variable<int>(guests);
+    {
+      map['total_amount'] = Variable<int>(
+        $BizBookingsTable.$convertertotalAmount.toSql(totalAmount),
+      );
+    }
+    if (!nullToAbsent || partyLedgerId != null) {
+      map['party_ledger_id'] = Variable<int>(partyLedgerId);
+    }
+    map['extra'] = Variable<String>(extra);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BizBookingsCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingsCompanion(
+      id: Value(id),
+      companyId: Value(companyId),
+      number: Value(number),
+      customerName: Value(customerName),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      startDate: Value(startDate),
+      endDate: Value(endDate),
+      slot: Value(slot),
+      status: Value(status),
+      guests: Value(guests),
+      totalAmount: Value(totalAmount),
+      partyLedgerId: partyLedgerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(partyLedgerId),
+      extra: Value(extra),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BizBookingRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingRow(
+      id: serializer.fromJson<int>(json['id']),
+      companyId: serializer.fromJson<int>(json['companyId']),
+      number: serializer.fromJson<int>(json['number']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      title: serializer.fromJson<String?>(json['title']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime>(json['endDate']),
+      slot: serializer.fromJson<String>(json['slot']),
+      status: $BizBookingsTable.$converterstatus.fromJson(
+        serializer.fromJson<String>(json['status']),
+      ),
+      guests: serializer.fromJson<int>(json['guests']),
+      totalAmount: serializer.fromJson<Money>(json['totalAmount']),
+      partyLedgerId: serializer.fromJson<int?>(json['partyLedgerId']),
+      extra: serializer.fromJson<String>(json['extra']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'companyId': serializer.toJson<int>(companyId),
+      'number': serializer.toJson<int>(number),
+      'customerName': serializer.toJson<String>(customerName),
+      'phone': serializer.toJson<String?>(phone),
+      'title': serializer.toJson<String?>(title),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime>(endDate),
+      'slot': serializer.toJson<String>(slot),
+      'status': serializer.toJson<String>(
+        $BizBookingsTable.$converterstatus.toJson(status),
+      ),
+      'guests': serializer.toJson<int>(guests),
+      'totalAmount': serializer.toJson<Money>(totalAmount),
+      'partyLedgerId': serializer.toJson<int?>(partyLedgerId),
+      'extra': serializer.toJson<String>(extra),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BizBookingRow copyWith({
+    int? id,
+    int? companyId,
+    int? number,
+    String? customerName,
+    Value<String?> phone = const Value.absent(),
+    Value<String?> title = const Value.absent(),
+    DateTime? startDate,
+    DateTime? endDate,
+    String? slot,
+    BizBookingStatus? status,
+    int? guests,
+    Money? totalAmount,
+    Value<int?> partyLedgerId = const Value.absent(),
+    String? extra,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => BizBookingRow(
+    id: id ?? this.id,
+    companyId: companyId ?? this.companyId,
+    number: number ?? this.number,
+    customerName: customerName ?? this.customerName,
+    phone: phone.present ? phone.value : this.phone,
+    title: title.present ? title.value : this.title,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate ?? this.endDate,
+    slot: slot ?? this.slot,
+    status: status ?? this.status,
+    guests: guests ?? this.guests,
+    totalAmount: totalAmount ?? this.totalAmount,
+    partyLedgerId: partyLedgerId.present
+        ? partyLedgerId.value
+        : this.partyLedgerId,
+    extra: extra ?? this.extra,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BizBookingRow copyWithCompanion(BizBookingsCompanion data) {
+    return BizBookingRow(
+      id: data.id.present ? data.id.value : this.id,
+      companyId: data.companyId.present ? data.companyId.value : this.companyId,
+      number: data.number.present ? data.number.value : this.number,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      title: data.title.present ? data.title.value : this.title,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      slot: data.slot.present ? data.slot.value : this.slot,
+      status: data.status.present ? data.status.value : this.status,
+      guests: data.guests.present ? data.guests.value : this.guests,
+      totalAmount: data.totalAmount.present
+          ? data.totalAmount.value
+          : this.totalAmount,
+      partyLedgerId: data.partyLedgerId.present
+          ? data.partyLedgerId.value
+          : this.partyLedgerId,
+      extra: data.extra.present ? data.extra.value : this.extra,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingRow(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('number: $number, ')
+          ..write('customerName: $customerName, ')
+          ..write('phone: $phone, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('slot: $slot, ')
+          ..write('status: $status, ')
+          ..write('guests: $guests, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('partyLedgerId: $partyLedgerId, ')
+          ..write('extra: $extra, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    companyId,
+    number,
+    customerName,
+    phone,
+    title,
+    startDate,
+    endDate,
+    slot,
+    status,
+    guests,
+    totalAmount,
+    partyLedgerId,
+    extra,
+    notes,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingRow &&
+          other.id == this.id &&
+          other.companyId == this.companyId &&
+          other.number == this.number &&
+          other.customerName == this.customerName &&
+          other.phone == this.phone &&
+          other.title == this.title &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.slot == this.slot &&
+          other.status == this.status &&
+          other.guests == this.guests &&
+          other.totalAmount == this.totalAmount &&
+          other.partyLedgerId == this.partyLedgerId &&
+          other.extra == this.extra &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BizBookingsCompanion extends UpdateCompanion<BizBookingRow> {
+  final Value<int> id;
+  final Value<int> companyId;
+  final Value<int> number;
+  final Value<String> customerName;
+  final Value<String?> phone;
+  final Value<String?> title;
+  final Value<DateTime> startDate;
+  final Value<DateTime> endDate;
+  final Value<String> slot;
+  final Value<BizBookingStatus> status;
+  final Value<int> guests;
+  final Value<Money> totalAmount;
+  final Value<int?> partyLedgerId;
+  final Value<String> extra;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const BizBookingsCompanion({
+    this.id = const Value.absent(),
+    this.companyId = const Value.absent(),
+    this.number = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.title = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.slot = const Value.absent(),
+    this.status = const Value.absent(),
+    this.guests = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.partyLedgerId = const Value.absent(),
+    this.extra = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  BizBookingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int companyId,
+    required int number,
+    required String customerName,
+    this.phone = const Value.absent(),
+    this.title = const Value.absent(),
+    required DateTime startDate,
+    required DateTime endDate,
+    this.slot = const Value.absent(),
+    required BizBookingStatus status,
+    this.guests = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.partyLedgerId = const Value.absent(),
+    this.extra = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : companyId = Value(companyId),
+       number = Value(number),
+       customerName = Value(customerName),
+       startDate = Value(startDate),
+       endDate = Value(endDate),
+       status = Value(status);
+  static Insertable<BizBookingRow> custom({
+    Expression<int>? id,
+    Expression<int>? companyId,
+    Expression<int>? number,
+    Expression<String>? customerName,
+    Expression<String>? phone,
+    Expression<String>? title,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? slot,
+    Expression<String>? status,
+    Expression<int>? guests,
+    Expression<int>? totalAmount,
+    Expression<int>? partyLedgerId,
+    Expression<String>? extra,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (companyId != null) 'company_id': companyId,
+      if (number != null) 'number': number,
+      if (customerName != null) 'customer_name': customerName,
+      if (phone != null) 'phone': phone,
+      if (title != null) 'title': title,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (slot != null) 'slot': slot,
+      if (status != null) 'status': status,
+      if (guests != null) 'guests': guests,
+      if (totalAmount != null) 'total_amount': totalAmount,
+      if (partyLedgerId != null) 'party_ledger_id': partyLedgerId,
+      if (extra != null) 'extra': extra,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  BizBookingsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? companyId,
+    Value<int>? number,
+    Value<String>? customerName,
+    Value<String?>? phone,
+    Value<String?>? title,
+    Value<DateTime>? startDate,
+    Value<DateTime>? endDate,
+    Value<String>? slot,
+    Value<BizBookingStatus>? status,
+    Value<int>? guests,
+    Value<Money>? totalAmount,
+    Value<int?>? partyLedgerId,
+    Value<String>? extra,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return BizBookingsCompanion(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      number: number ?? this.number,
+      customerName: customerName ?? this.customerName,
+      phone: phone ?? this.phone,
+      title: title ?? this.title,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      slot: slot ?? this.slot,
+      status: status ?? this.status,
+      guests: guests ?? this.guests,
+      totalAmount: totalAmount ?? this.totalAmount,
+      partyLedgerId: partyLedgerId ?? this.partyLedgerId,
+      extra: extra ?? this.extra,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (companyId.present) {
+      map['company_id'] = Variable<int>(companyId.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<int>(number.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (slot.present) {
+      map['slot'] = Variable<String>(slot.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(
+        $BizBookingsTable.$converterstatus.toSql(status.value),
+      );
+    }
+    if (guests.present) {
+      map['guests'] = Variable<int>(guests.value);
+    }
+    if (totalAmount.present) {
+      map['total_amount'] = Variable<int>(
+        $BizBookingsTable.$convertertotalAmount.toSql(totalAmount.value),
+      );
+    }
+    if (partyLedgerId.present) {
+      map['party_ledger_id'] = Variable<int>(partyLedgerId.value);
+    }
+    if (extra.present) {
+      map['extra'] = Variable<String>(extra.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingsCompanion(')
+          ..write('id: $id, ')
+          ..write('companyId: $companyId, ')
+          ..write('number: $number, ')
+          ..write('customerName: $customerName, ')
+          ..write('phone: $phone, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('slot: $slot, ')
+          ..write('status: $status, ')
+          ..write('guests: $guests, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('partyLedgerId: $partyLedgerId, ')
+          ..write('extra: $extra, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BizBookingLinesTable extends BizBookingLines
+    with TableInfo<$BizBookingLinesTable, BizBookingLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BizBookingLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _bookingIdMeta = const VerificationMeta(
+    'bookingId',
+  );
+  @override
+  late final GeneratedColumn<int> bookingId = GeneratedColumn<int>(
+    'booking_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_bookings (id)',
+    ),
+  );
+  static const VerificationMeta _resourceIdMeta = const VerificationMeta(
+    'resourceId',
+  );
+  @override
+  late final GeneratedColumn<int> resourceId = GeneratedColumn<int>(
+    'resource_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES biz_booking_resources (id)',
+    ),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> rate =
+      GeneratedColumn<int>(
+        'rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingLinesTable.$converterrate);
+  @override
+  late final GeneratedColumnWithTypeConverter<Money, int> amount =
+      GeneratedColumn<int>(
+        'amount',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<Money>($BizBookingLinesTable.$converteramount);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookingId,
+    resourceId,
+    qty,
+    rate,
+    amount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'biz_booking_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BizBookingLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('booking_id')) {
+      context.handle(
+        _bookingIdMeta,
+        bookingId.isAcceptableOrUnknown(data['booking_id']!, _bookingIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookingIdMeta);
+    }
+    if (data.containsKey('resource_id')) {
+      context.handle(
+        _resourceIdMeta,
+        resourceId.isAcceptableOrUnknown(data['resource_id']!, _resourceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resourceIdMeta);
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BizBookingLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BizBookingLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      bookingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}booking_id'],
+      )!,
+      resourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resource_id'],
+      )!,
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      rate: $BizBookingLinesTable.$converterrate.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}rate'],
+        )!,
+      ),
+      amount: $BizBookingLinesTable.$converteramount.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}amount'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $BizBookingLinesTable createAlias(String alias) {
+    return $BizBookingLinesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<Money, int> $converterrate = const MoneyConverter();
+  static TypeConverter<Money, int> $converteramount = const MoneyConverter();
+}
+
+class BizBookingLineRow extends DataClass
+    implements Insertable<BizBookingLineRow> {
+  final int id;
+  final int bookingId;
+  final int resourceId;
+  final int qty;
+  final Money rate;
+  final Money amount;
+  const BizBookingLineRow({
+    required this.id,
+    required this.bookingId,
+    required this.resourceId,
+    required this.qty,
+    required this.rate,
+    required this.amount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['booking_id'] = Variable<int>(bookingId);
+    map['resource_id'] = Variable<int>(resourceId);
+    map['qty'] = Variable<int>(qty);
+    {
+      map['rate'] = Variable<int>(
+        $BizBookingLinesTable.$converterrate.toSql(rate),
+      );
+    }
+    {
+      map['amount'] = Variable<int>(
+        $BizBookingLinesTable.$converteramount.toSql(amount),
+      );
+    }
+    return map;
+  }
+
+  BizBookingLinesCompanion toCompanion(bool nullToAbsent) {
+    return BizBookingLinesCompanion(
+      id: Value(id),
+      bookingId: Value(bookingId),
+      resourceId: Value(resourceId),
+      qty: Value(qty),
+      rate: Value(rate),
+      amount: Value(amount),
+    );
+  }
+
+  factory BizBookingLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BizBookingLineRow(
+      id: serializer.fromJson<int>(json['id']),
+      bookingId: serializer.fromJson<int>(json['bookingId']),
+      resourceId: serializer.fromJson<int>(json['resourceId']),
+      qty: serializer.fromJson<int>(json['qty']),
+      rate: serializer.fromJson<Money>(json['rate']),
+      amount: serializer.fromJson<Money>(json['amount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'bookingId': serializer.toJson<int>(bookingId),
+      'resourceId': serializer.toJson<int>(resourceId),
+      'qty': serializer.toJson<int>(qty),
+      'rate': serializer.toJson<Money>(rate),
+      'amount': serializer.toJson<Money>(amount),
+    };
+  }
+
+  BizBookingLineRow copyWith({
+    int? id,
+    int? bookingId,
+    int? resourceId,
+    int? qty,
+    Money? rate,
+    Money? amount,
+  }) => BizBookingLineRow(
+    id: id ?? this.id,
+    bookingId: bookingId ?? this.bookingId,
+    resourceId: resourceId ?? this.resourceId,
+    qty: qty ?? this.qty,
+    rate: rate ?? this.rate,
+    amount: amount ?? this.amount,
+  );
+  BizBookingLineRow copyWithCompanion(BizBookingLinesCompanion data) {
+    return BizBookingLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      bookingId: data.bookingId.present ? data.bookingId.value : this.bookingId,
+      resourceId: data.resourceId.present
+          ? data.resourceId.value
+          : this.resourceId,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      rate: data.rate.present ? data.rate.value : this.rate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingLineRow(')
+          ..write('id: $id, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('resourceId: $resourceId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, bookingId, resourceId, qty, rate, amount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BizBookingLineRow &&
+          other.id == this.id &&
+          other.bookingId == this.bookingId &&
+          other.resourceId == this.resourceId &&
+          other.qty == this.qty &&
+          other.rate == this.rate &&
+          other.amount == this.amount);
+}
+
+class BizBookingLinesCompanion extends UpdateCompanion<BizBookingLineRow> {
+  final Value<int> id;
+  final Value<int> bookingId;
+  final Value<int> resourceId;
+  final Value<int> qty;
+  final Value<Money> rate;
+  final Value<Money> amount;
+  const BizBookingLinesCompanion({
+    this.id = const Value.absent(),
+    this.bookingId = const Value.absent(),
+    this.resourceId = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+  });
+  BizBookingLinesCompanion.insert({
+    this.id = const Value.absent(),
+    required int bookingId,
+    required int resourceId,
+    this.qty = const Value.absent(),
+    this.rate = const Value.absent(),
+    this.amount = const Value.absent(),
+  }) : bookingId = Value(bookingId),
+       resourceId = Value(resourceId);
+  static Insertable<BizBookingLineRow> custom({
+    Expression<int>? id,
+    Expression<int>? bookingId,
+    Expression<int>? resourceId,
+    Expression<int>? qty,
+    Expression<int>? rate,
+    Expression<int>? amount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookingId != null) 'booking_id': bookingId,
+      if (resourceId != null) 'resource_id': resourceId,
+      if (qty != null) 'qty': qty,
+      if (rate != null) 'rate': rate,
+      if (amount != null) 'amount': amount,
+    });
+  }
+
+  BizBookingLinesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? bookingId,
+    Value<int>? resourceId,
+    Value<int>? qty,
+    Value<Money>? rate,
+    Value<Money>? amount,
+  }) {
+    return BizBookingLinesCompanion(
+      id: id ?? this.id,
+      bookingId: bookingId ?? this.bookingId,
+      resourceId: resourceId ?? this.resourceId,
+      qty: qty ?? this.qty,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (bookingId.present) {
+      map['booking_id'] = Variable<int>(bookingId.value);
+    }
+    if (resourceId.present) {
+      map['resource_id'] = Variable<int>(resourceId.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (rate.present) {
+      map['rate'] = Variable<int>(
+        $BizBookingLinesTable.$converterrate.toSql(rate.value),
+      );
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(
+        $BizBookingLinesTable.$converteramount.toSql(amount.value),
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BizBookingLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('bookingId: $bookingId, ')
+          ..write('resourceId: $resourceId, ')
+          ..write('qty: $qty, ')
+          ..write('rate: $rate, ')
+          ..write('amount: $amount')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -15518,6 +17657,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BizVoucherItemsTable bizVoucherItems = $BizVoucherItemsTable(
     this,
   );
+  late final $BizBookingResourcesTable bizBookingResources =
+      $BizBookingResourcesTable(this);
+  late final $BizBookingsTable bizBookings = $BizBookingsTable(this);
+  late final $BizBookingLinesTable bizBookingLines = $BizBookingLinesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15550,6 +17695,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bizVouchers,
     bizVoucherLines,
     bizVoucherItems,
+    bizBookingResources,
+    bizBookings,
+    bizBookingLines,
   ];
 }
 
@@ -27560,6 +29708,10 @@ typedef $$BizCompaniesTableCreateCompanionBuilder =
       Value<int> fyStartMonth,
       Value<Money> openingStock,
       Value<Money> closingStock,
+      Value<String> businessType,
+      Value<bool> bookingsEnabled,
+      Value<String?> bookingSlots,
+      Value<String?> bookingFields,
       Value<DateTime> createdAt,
     });
 typedef $$BizCompaniesTableUpdateCompanionBuilder =
@@ -27572,6 +29724,10 @@ typedef $$BizCompaniesTableUpdateCompanionBuilder =
       Value<int> fyStartMonth,
       Value<Money> openingStock,
       Value<Money> closingStock,
+      Value<String> businessType,
+      Value<bool> bookingsEnabled,
+      Value<String?> bookingSlots,
+      Value<String?> bookingFields,
       Value<DateTime> createdAt,
     });
 
@@ -27638,6 +29794,54 @@ final class $$BizCompaniesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $BizBookingResourcesTable,
+    List<BizBookingResourceRow>
+  >
+  _bizBookingResourcesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.bizBookingResources,
+        aliasName: $_aliasNameGenerator(
+          db.bizCompanies.id,
+          db.bizBookingResources.companyId,
+        ),
+      );
+
+  $$BizBookingResourcesTableProcessedTableManager get bizBookingResourcesRefs {
+    final manager = $$BizBookingResourcesTableTableManager(
+      $_db,
+      $_db.bizBookingResources,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingResourcesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingsTable, List<BizBookingRow>>
+  _bizBookingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookings,
+    aliasName: $_aliasNameGenerator(
+      db.bizCompanies.id,
+      db.bizBookings.companyId,
+    ),
+  );
+
+  $$BizBookingsTableProcessedTableManager get bizBookingsRefs {
+    final manager = $$BizBookingsTableTableManager(
+      $_db,
+      $_db.bizBookings,
+    ).filter((f) => f.companyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bizBookingsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$BizCompaniesTableFilterComposer
@@ -27690,6 +29894,26 @@ class $$BizCompaniesTableFilterComposer
         column: $table.closingStock,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
@@ -27770,6 +29994,56 @@ class $$BizCompaniesTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> bizBookingResourcesRefs(
+    Expression<bool> Function($$BizBookingResourcesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingResourcesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingResources,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingResourcesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingResources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bizBookingsRefs(
+    Expression<bool> Function($$BizBookingsTableFilterComposer f) f,
+  ) {
+    final $$BizBookingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BizCompaniesTableOrderingComposer
@@ -27821,6 +30095,26 @@ class $$BizCompaniesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -27867,6 +30161,26 @@ class $$BizCompaniesTableAnnotationComposer
         column: $table.closingStock,
         builder: (column) => column,
       );
+
+  GeneratedColumn<String> get businessType => $composableBuilder(
+    column: $table.businessType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get bookingsEnabled => $composableBuilder(
+    column: $table.bookingsEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bookingSlots => $composableBuilder(
+    column: $table.bookingSlots,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bookingFields => $composableBuilder(
+    column: $table.bookingFields,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -27945,6 +30259,57 @@ class $$BizCompaniesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> bizBookingResourcesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingResourcesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingResourcesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.companyId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> bizBookingsRefs<T extends Object>(
+    Expression<T> Function($$BizBookingsTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.companyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BizCompaniesTableTableManager
@@ -27964,6 +30329,8 @@ class $$BizCompaniesTableTableManager
             bool bizLedgersRefs,
             bool bizItemsRefs,
             bool bizVouchersRefs,
+            bool bizBookingResourcesRefs,
+            bool bizBookingsRefs,
           })
         > {
   $$BizCompaniesTableTableManager(_$AppDatabase db, $BizCompaniesTable table)
@@ -27987,6 +30354,10 @@ class $$BizCompaniesTableTableManager
                 Value<int> fyStartMonth = const Value.absent(),
                 Value<Money> openingStock = const Value.absent(),
                 Value<Money> closingStock = const Value.absent(),
+                Value<String> businessType = const Value.absent(),
+                Value<bool> bookingsEnabled = const Value.absent(),
+                Value<String?> bookingSlots = const Value.absent(),
+                Value<String?> bookingFields = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => BizCompaniesCompanion(
                 id: id,
@@ -27997,6 +30368,10 @@ class $$BizCompaniesTableTableManager
                 fyStartMonth: fyStartMonth,
                 openingStock: openingStock,
                 closingStock: closingStock,
+                businessType: businessType,
+                bookingsEnabled: bookingsEnabled,
+                bookingSlots: bookingSlots,
+                bookingFields: bookingFields,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -28009,6 +30384,10 @@ class $$BizCompaniesTableTableManager
                 Value<int> fyStartMonth = const Value.absent(),
                 Value<Money> openingStock = const Value.absent(),
                 Value<Money> closingStock = const Value.absent(),
+                Value<String> businessType = const Value.absent(),
+                Value<bool> bookingsEnabled = const Value.absent(),
+                Value<String?> bookingSlots = const Value.absent(),
+                Value<String?> bookingFields = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => BizCompaniesCompanion.insert(
                 id: id,
@@ -28019,6 +30398,10 @@ class $$BizCompaniesTableTableManager
                 fyStartMonth: fyStartMonth,
                 openingStock: openingStock,
                 closingStock: closingStock,
+                businessType: businessType,
+                bookingsEnabled: bookingsEnabled,
+                bookingSlots: bookingSlots,
+                bookingFields: bookingFields,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -28034,6 +30417,8 @@ class $$BizCompaniesTableTableManager
                 bizLedgersRefs = false,
                 bizItemsRefs = false,
                 bizVouchersRefs = false,
+                bizBookingResourcesRefs = false,
+                bizBookingsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -28041,6 +30426,8 @@ class $$BizCompaniesTableTableManager
                     if (bizLedgersRefs) db.bizLedgers,
                     if (bizItemsRefs) db.bizItems,
                     if (bizVouchersRefs) db.bizVouchers,
+                    if (bizBookingResourcesRefs) db.bizBookingResources,
+                    if (bizBookingsRefs) db.bizBookings,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -28108,6 +30495,48 @@ class $$BizCompaniesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (bizBookingResourcesRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizBookingResourceRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizBookingResourcesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingResourcesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bizBookingsRefs)
+                        await $_getPrefetchedData<
+                          BizCompanyRow,
+                          $BizCompaniesTable,
+                          BizBookingRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizCompaniesTableReferences
+                              ._bizBookingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizCompaniesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.companyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -28132,6 +30561,8 @@ typedef $$BizCompaniesTableProcessedTableManager =
         bool bizLedgersRefs,
         bool bizItemsRefs,
         bool bizVouchersRefs,
+        bool bizBookingResourcesRefs,
+        bool bizBookingsRefs,
       })
     >;
 typedef $$BizLedgersTableCreateCompanionBuilder =
@@ -29192,6 +31623,7 @@ typedef $$BizVouchersTableCreateCompanionBuilder =
       Value<String?> narration,
       Value<String?> reference,
       Value<String?> entryKind,
+      Value<int?> bookingId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
     });
@@ -29205,6 +31637,7 @@ typedef $$BizVouchersTableUpdateCompanionBuilder =
       Value<String?> narration,
       Value<String?> reference,
       Value<String?> entryKind,
+      Value<int?> bookingId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
     });
@@ -29321,6 +31754,11 @@ class $$BizVouchersTableFilterComposer
 
   ColumnFilters<String> get entryKind => $composableBuilder(
     column: $table.entryKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bookingId => $composableBuilder(
+    column: $table.bookingId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29452,6 +31890,11 @@ class $$BizVouchersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get bookingId => $composableBuilder(
+    column: $table.bookingId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -29515,6 +31958,9 @@ class $$BizVouchersTableAnnotationComposer
 
   GeneratedColumn<String> get entryKind =>
       $composableBuilder(column: $table.entryKind, builder: (column) => column);
+
+  GeneratedColumn<int> get bookingId =>
+      $composableBuilder(column: $table.bookingId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -29636,6 +32082,7 @@ class $$BizVouchersTableTableManager
                 Value<String?> narration = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
                 Value<String?> entryKind = const Value.absent(),
+                Value<int?> bookingId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => BizVouchersCompanion(
@@ -29647,6 +32094,7 @@ class $$BizVouchersTableTableManager
                 narration: narration,
                 reference: reference,
                 entryKind: entryKind,
+                bookingId: bookingId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -29660,6 +32108,7 @@ class $$BizVouchersTableTableManager
                 Value<String?> narration = const Value.absent(),
                 Value<String?> reference = const Value.absent(),
                 Value<String?> entryKind = const Value.absent(),
+                Value<int?> bookingId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => BizVouchersCompanion.insert(
@@ -29671,6 +32120,7 @@ class $$BizVouchersTableTableManager
                 narration: narration,
                 reference: reference,
                 entryKind: entryKind,
+                bookingId: bookingId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -30653,6 +33103,1591 @@ typedef $$BizVoucherItemsTableProcessedTableManager =
       BizVoucherItemRow,
       PrefetchHooks Function({bool voucherId, bool itemId})
     >;
+typedef $$BizBookingResourcesTableCreateCompanionBuilder =
+    BizBookingResourcesCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required String name,
+      Value<int> capacity,
+      Value<bool> shared,
+      Value<Money> rate,
+      Value<int> sort,
+      Value<bool> isArchived,
+    });
+typedef $$BizBookingResourcesTableUpdateCompanionBuilder =
+    BizBookingResourcesCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<String> name,
+      Value<int> capacity,
+      Value<bool> shared,
+      Value<Money> rate,
+      Value<int> sort,
+      Value<bool> isArchived,
+    });
+
+final class $$BizBookingResourcesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizBookingResourcesTable,
+          BizBookingResourceRow
+        > {
+  $$BizBookingResourcesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(
+          db.bizBookingResources.companyId,
+          db.bizCompanies.id,
+        ),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingLinesTable, List<BizBookingLineRow>>
+  _bizBookingLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookingLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizBookingResources.id,
+      db.bizBookingLines.resourceId,
+    ),
+  );
+
+  $$BizBookingLinesTableProcessedTableManager get bizBookingLinesRefs {
+    final manager = $$BizBookingLinesTableTableManager(
+      $_db,
+      $_db.bizBookingLines,
+    ).filter((f) => f.resourceId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizBookingResourcesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get capacity => $composableBuilder(
+    column: $table.capacity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get shared => $composableBuilder(
+    column: $table.shared,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get rate =>
+      $composableBuilder(
+        column: $table.rate,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizBookingLinesRefs(
+    Expression<bool> Function($$BizBookingLinesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.resourceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingResourcesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get capacity => $composableBuilder(
+    column: $table.capacity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get shared => $composableBuilder(
+    column: $table.shared,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rate => $composableBuilder(
+    column: $table.rate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sort => $composableBuilder(
+    column: $table.sort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingResourcesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingResourcesTable> {
+  $$BizBookingResourcesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get capacity =>
+      $composableBuilder(column: $table.capacity, builder: (column) => column);
+
+  GeneratedColumn<bool> get shared =>
+      $composableBuilder(column: $table.shared, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumn<int> get sort =>
+      $composableBuilder(column: $table.sort, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizBookingLinesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.resourceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingResourcesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingResourcesTable,
+          BizBookingResourceRow,
+          $$BizBookingResourcesTableFilterComposer,
+          $$BizBookingResourcesTableOrderingComposer,
+          $$BizBookingResourcesTableAnnotationComposer,
+          $$BizBookingResourcesTableCreateCompanionBuilder,
+          $$BizBookingResourcesTableUpdateCompanionBuilder,
+          (BizBookingResourceRow, $$BizBookingResourcesTableReferences),
+          BizBookingResourceRow,
+          PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+        > {
+  $$BizBookingResourcesTableTableManager(
+    _$AppDatabase db,
+    $BizBookingResourcesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingResourcesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingResourcesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BizBookingResourcesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> capacity = const Value.absent(),
+                Value<bool> shared = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+              }) => BizBookingResourcesCompanion(
+                id: id,
+                companyId: companyId,
+                name: name,
+                capacity: capacity,
+                shared: shared,
+                rate: rate,
+                sort: sort,
+                isArchived: isArchived,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required String name,
+                Value<int> capacity = const Value.absent(),
+                Value<bool> shared = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<int> sort = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+              }) => BizBookingResourcesCompanion.insert(
+                id: id,
+                companyId: companyId,
+                name: name,
+                capacity: capacity,
+                shared: shared,
+                rate: rate,
+                sort: sort,
+                isArchived: isArchived,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingResourcesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizBookingLinesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizBookingLinesRefs) db.bizBookingLines,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable:
+                                        $$BizBookingResourcesTableReferences
+                                            ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizBookingResourcesTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizBookingLinesRefs)
+                        await $_getPrefetchedData<
+                          BizBookingResourceRow,
+                          $BizBookingResourcesTable,
+                          BizBookingLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizBookingResourcesTableReferences
+                              ._bizBookingLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizBookingResourcesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.resourceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizBookingResourcesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingResourcesTable,
+      BizBookingResourceRow,
+      $$BizBookingResourcesTableFilterComposer,
+      $$BizBookingResourcesTableOrderingComposer,
+      $$BizBookingResourcesTableAnnotationComposer,
+      $$BizBookingResourcesTableCreateCompanionBuilder,
+      $$BizBookingResourcesTableUpdateCompanionBuilder,
+      (BizBookingResourceRow, $$BizBookingResourcesTableReferences),
+      BizBookingResourceRow,
+      PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+    >;
+typedef $$BizBookingsTableCreateCompanionBuilder =
+    BizBookingsCompanion Function({
+      Value<int> id,
+      required int companyId,
+      required int number,
+      required String customerName,
+      Value<String?> phone,
+      Value<String?> title,
+      required DateTime startDate,
+      required DateTime endDate,
+      Value<String> slot,
+      required BizBookingStatus status,
+      Value<int> guests,
+      Value<Money> totalAmount,
+      Value<int?> partyLedgerId,
+      Value<String> extra,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$BizBookingsTableUpdateCompanionBuilder =
+    BizBookingsCompanion Function({
+      Value<int> id,
+      Value<int> companyId,
+      Value<int> number,
+      Value<String> customerName,
+      Value<String?> phone,
+      Value<String?> title,
+      Value<DateTime> startDate,
+      Value<DateTime> endDate,
+      Value<String> slot,
+      Value<BizBookingStatus> status,
+      Value<int> guests,
+      Value<Money> totalAmount,
+      Value<int?> partyLedgerId,
+      Value<String> extra,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$BizBookingsTableReferences
+    extends BaseReferences<_$AppDatabase, $BizBookingsTable, BizBookingRow> {
+  $$BizBookingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BizCompaniesTable _companyIdTable(_$AppDatabase db) =>
+      db.bizCompanies.createAlias(
+        $_aliasNameGenerator(db.bizBookings.companyId, db.bizCompanies.id),
+      );
+
+  $$BizCompaniesTableProcessedTableManager get companyId {
+    final $_column = $_itemColumn<int>('company_id')!;
+
+    final manager = $$BizCompaniesTableTableManager(
+      $_db,
+      $_db.bizCompanies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_companyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$BizBookingLinesTable, List<BizBookingLineRow>>
+  _bizBookingLinesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bizBookingLines,
+    aliasName: $_aliasNameGenerator(
+      db.bizBookings.id,
+      db.bizBookingLines.bookingId,
+    ),
+  );
+
+  $$BizBookingLinesTableProcessedTableManager get bizBookingLinesRefs {
+    final manager = $$BizBookingLinesTableTableManager(
+      $_db,
+      $_db.bizBookingLines,
+    ).filter((f) => f.bookingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bizBookingLinesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$BizBookingsTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get slot => $composableBuilder(
+    column: $table.slot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<BizBookingStatus, BizBookingStatus, String>
+  get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get guests => $composableBuilder(
+    column: $table.guests,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get totalAmount =>
+      $composableBuilder(
+        column: $table.totalAmount,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extra => $composableBuilder(
+    column: $table.extra,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BizCompaniesTableFilterComposer get companyId {
+    final $$BizCompaniesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> bizBookingLinesRefs(
+    Expression<bool> Function($$BizBookingLinesTableFilterComposer f) f,
+  ) {
+    final $$BizBookingLinesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.bookingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get number => $composableBuilder(
+    column: $table.number,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get slot => $composableBuilder(
+    column: $table.slot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guests => $composableBuilder(
+    column: $table.guests,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalAmount => $composableBuilder(
+    column: $table.totalAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get extra => $composableBuilder(
+    column: $table.extra,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizCompaniesTableOrderingComposer get companyId {
+    final $$BizCompaniesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingsTable> {
+  $$BizBookingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get number =>
+      $composableBuilder(column: $table.number, builder: (column) => column);
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+    column: $table.customerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get slot =>
+      $composableBuilder(column: $table.slot, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<BizBookingStatus, String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get guests =>
+      $composableBuilder(column: $table.guests, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get totalAmount =>
+      $composableBuilder(
+        column: $table.totalAmount,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<int> get partyLedgerId => $composableBuilder(
+    column: $table.partyLedgerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get extra =>
+      $composableBuilder(column: $table.extra, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BizCompaniesTableAnnotationComposer get companyId {
+    final $$BizCompaniesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.companyId,
+      referencedTable: $db.bizCompanies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizCompaniesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizCompanies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> bizBookingLinesRefs<T extends Object>(
+    Expression<T> Function($$BizBookingLinesTableAnnotationComposer a) f,
+  ) {
+    final $$BizBookingLinesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bizBookingLines,
+      getReferencedColumn: (t) => t.bookingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingLinesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookingLines,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$BizBookingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingsTable,
+          BizBookingRow,
+          $$BizBookingsTableFilterComposer,
+          $$BizBookingsTableOrderingComposer,
+          $$BizBookingsTableAnnotationComposer,
+          $$BizBookingsTableCreateCompanionBuilder,
+          $$BizBookingsTableUpdateCompanionBuilder,
+          (BizBookingRow, $$BizBookingsTableReferences),
+          BizBookingRow,
+          PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+        > {
+  $$BizBookingsTableTableManager(_$AppDatabase db, $BizBookingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizBookingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> companyId = const Value.absent(),
+                Value<int> number = const Value.absent(),
+                Value<String> customerName = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime> endDate = const Value.absent(),
+                Value<String> slot = const Value.absent(),
+                Value<BizBookingStatus> status = const Value.absent(),
+                Value<int> guests = const Value.absent(),
+                Value<Money> totalAmount = const Value.absent(),
+                Value<int?> partyLedgerId = const Value.absent(),
+                Value<String> extra = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizBookingsCompanion(
+                id: id,
+                companyId: companyId,
+                number: number,
+                customerName: customerName,
+                phone: phone,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                slot: slot,
+                status: status,
+                guests: guests,
+                totalAmount: totalAmount,
+                partyLedgerId: partyLedgerId,
+                extra: extra,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int companyId,
+                required int number,
+                required String customerName,
+                Value<String?> phone = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                required DateTime startDate,
+                required DateTime endDate,
+                Value<String> slot = const Value.absent(),
+                required BizBookingStatus status,
+                Value<int> guests = const Value.absent(),
+                Value<Money> totalAmount = const Value.absent(),
+                Value<int?> partyLedgerId = const Value.absent(),
+                Value<String> extra = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BizBookingsCompanion.insert(
+                id: id,
+                companyId: companyId,
+                number: number,
+                customerName: customerName,
+                phone: phone,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                slot: slot,
+                status: status,
+                guests: guests,
+                totalAmount: totalAmount,
+                partyLedgerId: partyLedgerId,
+                extra: extra,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({companyId = false, bizBookingLinesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (bizBookingLinesRefs) db.bizBookingLines,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (companyId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.companyId,
+                                    referencedTable:
+                                        $$BizBookingsTableReferences
+                                            ._companyIdTable(db),
+                                    referencedColumn:
+                                        $$BizBookingsTableReferences
+                                            ._companyIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (bizBookingLinesRefs)
+                        await $_getPrefetchedData<
+                          BizBookingRow,
+                          $BizBookingsTable,
+                          BizBookingLineRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BizBookingsTableReferences
+                              ._bizBookingLinesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BizBookingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bizBookingLinesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$BizBookingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingsTable,
+      BizBookingRow,
+      $$BizBookingsTableFilterComposer,
+      $$BizBookingsTableOrderingComposer,
+      $$BizBookingsTableAnnotationComposer,
+      $$BizBookingsTableCreateCompanionBuilder,
+      $$BizBookingsTableUpdateCompanionBuilder,
+      (BizBookingRow, $$BizBookingsTableReferences),
+      BizBookingRow,
+      PrefetchHooks Function({bool companyId, bool bizBookingLinesRefs})
+    >;
+typedef $$BizBookingLinesTableCreateCompanionBuilder =
+    BizBookingLinesCompanion Function({
+      Value<int> id,
+      required int bookingId,
+      required int resourceId,
+      Value<int> qty,
+      Value<Money> rate,
+      Value<Money> amount,
+    });
+typedef $$BizBookingLinesTableUpdateCompanionBuilder =
+    BizBookingLinesCompanion Function({
+      Value<int> id,
+      Value<int> bookingId,
+      Value<int> resourceId,
+      Value<int> qty,
+      Value<Money> rate,
+      Value<Money> amount,
+    });
+
+final class $$BizBookingLinesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BizBookingLinesTable,
+          BizBookingLineRow
+        > {
+  $$BizBookingLinesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BizBookingsTable _bookingIdTable(_$AppDatabase db) =>
+      db.bizBookings.createAlias(
+        $_aliasNameGenerator(db.bizBookingLines.bookingId, db.bizBookings.id),
+      );
+
+  $$BizBookingsTableProcessedTableManager get bookingId {
+    final $_column = $_itemColumn<int>('booking_id')!;
+
+    final manager = $$BizBookingsTableTableManager(
+      $_db,
+      $_db.bizBookings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $BizBookingResourcesTable _resourceIdTable(_$AppDatabase db) =>
+      db.bizBookingResources.createAlias(
+        $_aliasNameGenerator(
+          db.bizBookingLines.resourceId,
+          db.bizBookingResources.id,
+        ),
+      );
+
+  $$BizBookingResourcesTableProcessedTableManager get resourceId {
+    final $_column = $_itemColumn<int>('resource_id')!;
+
+    final manager = $$BizBookingResourcesTableTableManager(
+      $_db,
+      $_db.bizBookingResources,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_resourceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BizBookingLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get rate =>
+      $composableBuilder(
+        column: $table.rate,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Money, Money, int> get amount =>
+      $composableBuilder(
+        column: $table.amount,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$BizBookingsTableFilterComposer get bookingId {
+    final $$BizBookingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableFilterComposer get resourceId {
+    final $$BizBookingResourcesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.resourceId,
+      referencedTable: $db.bizBookingResources,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingResourcesTableFilterComposer(
+            $db: $db,
+            $table: $db.bizBookingResources,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rate => $composableBuilder(
+    column: $table.rate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BizBookingsTableOrderingComposer get bookingId {
+    final $$BizBookingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableOrderingComposer get resourceId {
+    final $$BizBookingResourcesTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resourceId,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableOrderingComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BizBookingLinesTable> {
+  $$BizBookingLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get qty =>
+      $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get rate =>
+      $composableBuilder(column: $table.rate, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Money, int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  $$BizBookingsTableAnnotationComposer get bookingId {
+    final $$BizBookingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookingId,
+      referencedTable: $db.bizBookings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BizBookingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bizBookings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$BizBookingResourcesTableAnnotationComposer get resourceId {
+    final $$BizBookingResourcesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resourceId,
+          referencedTable: $db.bizBookingResources,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BizBookingResourcesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bizBookingResources,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$BizBookingLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BizBookingLinesTable,
+          BizBookingLineRow,
+          $$BizBookingLinesTableFilterComposer,
+          $$BizBookingLinesTableOrderingComposer,
+          $$BizBookingLinesTableAnnotationComposer,
+          $$BizBookingLinesTableCreateCompanionBuilder,
+          $$BizBookingLinesTableUpdateCompanionBuilder,
+          (BizBookingLineRow, $$BizBookingLinesTableReferences),
+          BizBookingLineRow,
+          PrefetchHooks Function({bool bookingId, bool resourceId})
+        > {
+  $$BizBookingLinesTableTableManager(
+    _$AppDatabase db,
+    $BizBookingLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BizBookingLinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BizBookingLinesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BizBookingLinesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> bookingId = const Value.absent(),
+                Value<int> resourceId = const Value.absent(),
+                Value<int> qty = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<Money> amount = const Value.absent(),
+              }) => BizBookingLinesCompanion(
+                id: id,
+                bookingId: bookingId,
+                resourceId: resourceId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int bookingId,
+                required int resourceId,
+                Value<int> qty = const Value.absent(),
+                Value<Money> rate = const Value.absent(),
+                Value<Money> amount = const Value.absent(),
+              }) => BizBookingLinesCompanion.insert(
+                id: id,
+                bookingId: bookingId,
+                resourceId: resourceId,
+                qty: qty,
+                rate: rate,
+                amount: amount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BizBookingLinesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookingId = false, resourceId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bookingId,
+                                referencedTable:
+                                    $$BizBookingLinesTableReferences
+                                        ._bookingIdTable(db),
+                                referencedColumn:
+                                    $$BizBookingLinesTableReferences
+                                        ._bookingIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (resourceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.resourceId,
+                                referencedTable:
+                                    $$BizBookingLinesTableReferences
+                                        ._resourceIdTable(db),
+                                referencedColumn:
+                                    $$BizBookingLinesTableReferences
+                                        ._resourceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BizBookingLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BizBookingLinesTable,
+      BizBookingLineRow,
+      $$BizBookingLinesTableFilterComposer,
+      $$BizBookingLinesTableOrderingComposer,
+      $$BizBookingLinesTableAnnotationComposer,
+      $$BizBookingLinesTableCreateCompanionBuilder,
+      $$BizBookingLinesTableUpdateCompanionBuilder,
+      (BizBookingLineRow, $$BizBookingLinesTableReferences),
+      BizBookingLineRow,
+      PrefetchHooks Function({bool bookingId, bool resourceId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -30710,4 +34745,10 @@ class $AppDatabaseManager {
       $$BizVoucherLinesTableTableManager(_db, _db.bizVoucherLines);
   $$BizVoucherItemsTableTableManager get bizVoucherItems =>
       $$BizVoucherItemsTableTableManager(_db, _db.bizVoucherItems);
+  $$BizBookingResourcesTableTableManager get bizBookingResources =>
+      $$BizBookingResourcesTableTableManager(_db, _db.bizBookingResources);
+  $$BizBookingsTableTableManager get bizBookings =>
+      $$BizBookingsTableTableManager(_db, _db.bizBookings);
+  $$BizBookingLinesTableTableManager get bizBookingLines =>
+      $$BizBookingLinesTableTableManager(_db, _db.bizBookingLines);
 }

@@ -21,6 +21,12 @@ import 'day_book_screen.dart';
 import 'items_screen.dart';
 import 'ledgers_screen.dart';
 import 'reports_screens.dart';
+import 'booking/booking_book.dart';
+import 'booking/booking_form_screen.dart';
+import 'booking/booking_providers.dart';
+import 'booking/booking_setup_screen.dart';
+import 'booking/bookings_screen.dart';
+import 'booking/business_types.dart';
 import 'voucher_entry_screen.dart';
 
 /// XPENC Business — Tally-style books for a small business, built for a
@@ -52,6 +58,8 @@ class _BusinessDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(bizPeriodProvider);
+    final type = ref.watch(bizBusinessTypeProvider);
+    final bookingsOn = ref.watch(bookingsEnabledProvider);
     return BizBookGate(
       title: 'Business',
       builder: (context, book) {
@@ -187,6 +195,7 @@ class _BusinessDashboard extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (bookingsOn) _BookingsCard(type: type),
               // ── Quick entries ──
               const BizSectionLabel('Quick entry'),
               SizedBox(
@@ -195,6 +204,20 @@ class _BusinessDashboard extends ConsumerWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   children: [
+                    if (bookingsOn) ...[
+                      _QuickChip(
+                        icon: Icons.add_task_rounded,
+                        label: 'New ${type.bookingNoun.toLowerCase()}',
+                        onTap: () =>
+                            pushBizScreen(context, const BookingFormScreen()),
+                      ),
+                      _QuickChip(
+                        icon: Icons.calendar_month_outlined,
+                        label: type.bookingPlural,
+                        onTap: () =>
+                            pushBizScreen(context, const BookingsScreen()),
+                      ),
+                    ],
                     for (final k in const [
                       BizEntryKind.sale,
                       BizEntryKind.purchase,
@@ -323,6 +346,13 @@ class _BusinessDashboard extends ConsumerWidget {
               const BizSectionLabel('Books'),
               _MenuCard(
                 items: [
+                  if (bookingsOn)
+                    _Menu(
+                      Icons.calendar_month_outlined,
+                      type.bookingPlural,
+                      'Calendar, availability, advances',
+                      () => pushBizScreen(context, const BookingsScreen()),
+                    ),
                   _Menu(
                     Icons.receipt_long_outlined,
                     'Day Book',
@@ -367,6 +397,12 @@ class _BusinessDashboard extends ConsumerWidget {
                     'Stock & items',
                     'Quantities and stock value',
                     () => pushBizScreen(context, const ItemsScreen()),
+                  ),
+                  _Menu(
+                    type.icon,
+                    'Business type & bookings',
+                    '${type.label} · bookings ${bookingsOn ? 'on' : 'off'}',
+                    () => pushBizScreen(context, const BookingSetupScreen()),
                   ),
                 ],
               ),
@@ -722,6 +758,143 @@ class _MenuCard extends StatelessWidget {
   }
 }
 
+/// Today and what's next — the first thing a venue, cinema or hotel owner
+/// wants to see.
+class _BookingsCard extends ConsumerWidget {
+  const _BookingsCard({required this.type});
+  final BizBusinessType type;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final bookings = ref.watch(bookingBookProvider).valueOrNull;
+    final books = ref.watch(bizBookProvider).valueOrNull;
+    if (bookings == null || books == null) return const SizedBox.shrink();
+    final today = dayOf(DateTime.now());
+    final todays = bookings.on(today).where((b) => b.status.blocks).toList();
+    final upcoming = bookings.upcoming(today);
+    final week = upcoming
+        .where((b) => b.startDate.isBefore(today.add(const Duration(days: 7))))
+        .length;
+    final enquiries = bookings.withStatus(BizBookingStatus.enquiry).length;
+    final due = upcoming.fold(const Money.zero(), (s, b) {
+      final d = bookings.moneyOf(b, books).due;
+      return d.isPositive ? s + d : s;
+    });
+    final next = upcoming.take(3).toList();
+    return Column(
+      children: [
+        BizSectionLabel(
+          type.bookingPlural,
+          trailing: TextButton(
+            onPressed: () => pushBizScreen(context, const BookingsScreen()),
+            child: const Text('Calendar'),
+          ),
+        ),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
+                child: Row(
+                  children: [
+                    _Count('Today', '${todays.length}'),
+                    _Count('Next 7 days', '$week'),
+                    _Count('Enquiries', '$enquiries'),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Balance due',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          MoneyText(
+                            due,
+                            compact: true,
+                            color: due.isPositive ? AppColors.expense : null,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (next.isNotEmpty) ...[
+                const Divider(height: 1),
+                for (final b in next)
+                  BookingTile(bookings: bookings, books: books, booking: b),
+              ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () =>
+                            pushBizScreen(context, const BookingFormScreen()),
+                        icon: const Icon(Icons.add_rounded),
+                        label: Text(
+                          'New ${type.bookingNoun.toLowerCase()}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            pushBizScreen(context, const BookingsScreen()),
+                        icon: const Icon(Icons.event_available_outlined),
+                        label: const Text('Availability'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Count extends StatelessWidget {
+  const _Count(this.label, this.value);
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Company setup ───────────────────────────────────────────────────────────
 
 class CompanyFormScreen extends ConsumerStatefulWidget {
@@ -743,6 +916,7 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
   final _bank = TextEditingController();
   final _cash = TextEditingController();
   late int _fyStart = widget.company?.fyStartMonth ?? 4;
+  BizBusinessType _type = BizBusinessType.general;
   bool _saving = false;
 
   @override
@@ -768,6 +942,7 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
         gstin: _gstin.text,
         fyStartMonth: _fyStart,
         bankName: _bank.text,
+        businessType: _type,
         openingCash: parseMoney(_cash.text),
       );
       ref.read(bizPeriodOverrideProvider.notifier).state = null;
@@ -862,6 +1037,7 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
                       'Tally-style double-entry accounting on your phone: record capital invested, '
                       'loans, purchases, sales with GST, expenses and income — and get Day Book, '
                       'Ledgers, Profit & Loss, Balance Sheet, Trial Balance, Outstanding and Stock. '
+                      'Turn on Bookings for halls, screens, rooms or appointments. '
                       'Separate from your personal money.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -881,6 +1057,38 @@ class _CompanyFormScreenState extends ConsumerState<CompanyFormScreen> {
               border: OutlineInputBorder(),
             ),
           ),
+          if (isNew) ...[
+            const BizSectionLabel('What kind of business?'),
+            BusinessTypePicker(
+              selected: _type,
+              onSelected: (t) => setState(() => _type = t),
+            ),
+            if (_type.defaultBookings)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: Text(
+                  'Bookings will be on, with ${_type.resourcePlural.toLowerCase()} '
+                  '${_type.resources.isEmpty ? '' : '(${_type.resources.map((r) => r.name).join(', ')}) '}'
+                  'ready to edit.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Card(
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  leading: const Icon(Icons.storefront_outlined),
+                  title: const Text('Business type & bookings'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () =>
+                      pushBizScreen(context, const BookingSetupScreen()),
+                ),
+              ),
+            ),
           const SizedBox(height: 12),
           TextField(
             controller: _address,
