@@ -650,6 +650,16 @@ class AppDatabase extends _$AppDatabase {
   /// Deletes go children-before-parents, the same order [importAll] already
   /// established, so foreign keys never reject a delete partway through.
   Future<void> clearAllData() => transaction(() async {
+    // Business Books & bookings — children first, then companies.
+    await delete(bizBookingLines).go();
+    await delete(bizBookings).go();
+    await delete(bizBookingResources).go();
+    await delete(bizVoucherItems).go();
+    await delete(bizVoucherLines).go();
+    await delete(bizVouchers).go();
+    await delete(bizItems).go();
+    await delete(bizLedgers).go();
+    await delete(bizCompanies).go();
     await delete(budgetAlerts).go();
     await delete(pendingTxns).go();
     await delete(merchantRules).go();

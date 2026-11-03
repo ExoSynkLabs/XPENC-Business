@@ -4,6 +4,14 @@
 > Personal daily money-tracking app: income, expenses, transfers, debts, budgets, alerts.
 > *(Formerly "Money Manager" — see §0 for what the rename did and did not touch.)*
 
+
+> **XPENC Business (this repo) is business-only.** Since 1.1.0 the personal
+> features described in §1–§9 are removed from the app — no personal
+> dashboard, transactions, persons, budgets, SMS capture, notifications or
+> widgets. Their tables remain in the schema only so older backups restore.
+> The app is §10.5 (Business Books) and §10.6 (Bookings), with navigation
+> `Home · Bookings · ➕ · Reports · More` (`core/routing/app_shell.dart`).
+
 ---
 
 ## 0. Brand & identity

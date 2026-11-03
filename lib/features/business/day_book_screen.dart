@@ -9,6 +9,8 @@ import 'biz_book.dart';
 import 'biz_entry_kinds.dart';
 import 'biz_providers.dart';
 import 'biz_widgets.dart';
+import 'booking/booking_form_screen.dart';
+import 'booking/booking_providers.dart';
 import 'voucher_entry_screen.dart';
 
 IconData iconForVoucher(BizVoucherRow v) =>
@@ -23,6 +25,16 @@ IconData iconForVoucher(BizVoucherRow v) =>
       BizVoucherType.creditNote => Icons.assignment_return_outlined,
       BizVoucherType.debitNote => Icons.keyboard_return_rounded,
     };
+
+/// Marks the "New booking" choice in the entry sheet.
+const _bookingSentinel = BizEntryKind(
+  key: '_booking',
+  label: 'Booking',
+  hint: '',
+  icon: Icons.event_available_rounded,
+  type: BizVoucherType.journal,
+  section: '',
+);
 
 /// One voucher as a list row. Tap to edit.
 class VoucherTile extends StatelessWidget {
@@ -195,6 +207,11 @@ class DayBookScreen extends ConsumerWidget {
 
 /// The "what happened?" picker — every quick-entry kind, grouped.
 Future<void> showNewEntrySheet(BuildContext context) async {
+  final container = ProviderScope.containerOf(context, listen: false);
+  final type = container.read(bizBusinessTypeProvider);
+  final bookingKind = container.read(bookingsEnabledProvider)
+      ? (type.bookingNoun, type.bookingPlural, type.icon)
+      : null;
   final kind = await showModalBottomSheet<BizEntryKind>(
     context: context,
     isScrollControlled: true,
@@ -214,6 +231,24 @@ Future<void> showNewEntrySheet(BuildContext context) async {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
               child: Text('New entry', style: theme.textTheme.titleLarge),
             ),
+            if (bookingKind != null) ...[
+              BizSectionLabel(bookingKind.$2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Icon(bookingKind.$3),
+                    title: Text('New ${bookingKind.$1.toLowerCase()}'),
+                    subtitle: const Text(
+                      'Register a customer and block the date',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.pop(sheet, _bookingSentinel),
+                  ),
+                ),
+              ),
+            ],
             for (final section in BizEntryKind.bySection.entries) ...[
               BizSectionLabel(section.key),
               Padding(
@@ -245,9 +280,15 @@ Future<void> showNewEntrySheet(BuildContext context) async {
       },
     ),
   );
-  if (kind != null && context.mounted) {
-    await openVoucherEntry(context, kind: kind);
+  if (kind == null || !context.mounted) return;
+  if (identical(kind, _bookingSentinel)) {
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute<void>(builder: (_) => const BookingFormScreen()));
+    return;
   }
+  await openVoucherEntry(context, kind: kind);
 }
 
 class _KindTile extends StatelessWidget {

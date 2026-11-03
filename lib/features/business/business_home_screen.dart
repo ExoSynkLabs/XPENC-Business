@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../core/money.dart';
 import '../../core/theme/app_colors.dart';
@@ -20,6 +17,7 @@ import 'biz_widgets.dart';
 import 'day_book_screen.dart';
 import 'items_screen.dart';
 import 'ledgers_screen.dart';
+import 'reports_hub_screen.dart';
 import 'reports_screens.dart';
 import 'booking/booking_book.dart';
 import 'booking/booking_form_screen.dart';
@@ -126,11 +124,6 @@ class _BusinessDashboard extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => showNewEntrySheet(context),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('New entry'),
           ),
           body: ListView(
             padding: const EdgeInsets.only(bottom: 104),
@@ -342,105 +335,6 @@ class _BusinessDashboard extends ConsumerWidget {
                   ),
                 ],
               ),
-              // ── Books & reports ──
-              const BizSectionLabel('Books'),
-              _MenuCard(
-                items: [
-                  if (bookingsOn)
-                    _Menu(
-                      Icons.calendar_month_outlined,
-                      type.bookingPlural,
-                      'Calendar, availability, advances',
-                      () => pushBizScreen(context, const BookingsScreen()),
-                    ),
-                  _Menu(
-                    Icons.receipt_long_outlined,
-                    'Day Book',
-                    'Every voucher, date-wise',
-                    () => pushBizScreen(context, const DayBookScreen()),
-                  ),
-                  _Menu(
-                    Icons.account_tree_outlined,
-                    'Ledgers',
-                    '${book.ledgers.where((l) => !l.isArchived).length} accounts under Tally groups',
-                    () => pushBizScreen(context, const LedgersScreen()),
-                  ),
-                  _Menu(
-                    Icons.groups_outlined,
-                    'Parties',
-                    'Customers & suppliers',
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Parties',
-                        groups: [
-                          BizGroup.sundryDebtors,
-                          BizGroup.sundryCreditors,
-                        ],
-                      ),
-                    ),
-                  ),
-                  _Menu(
-                    Icons.account_balance_wallet_outlined,
-                    'Cash & Bank book',
-                    'Running balance per account',
-                    () => pushBizScreen(
-                      context,
-                      const LedgersScreen(
-                        title: 'Cash & Bank',
-                        groups: [BizGroup.cash, BizGroup.bank],
-                      ),
-                    ),
-                  ),
-                  _Menu(
-                    Icons.inventory_2_outlined,
-                    'Stock & items',
-                    'Quantities and stock value',
-                    () => pushBizScreen(context, const ItemsScreen()),
-                  ),
-                  _Menu(
-                    type.icon,
-                    'Business type & bookings',
-                    '${type.label} · bookings ${bookingsOn ? 'on' : 'off'}',
-                    () => pushBizScreen(context, const BookingSetupScreen()),
-                  ),
-                ],
-              ),
-              const BizSectionLabel('Reports'),
-              _MenuCard(
-                items: [
-                  _Menu(
-                    Icons.stacked_line_chart_rounded,
-                    'Profit & Loss',
-                    'Trading and P&L account',
-                    () => pushBizScreen(context, const ProfitLossScreen()),
-                  ),
-                  _Menu(
-                    Icons.balance_rounded,
-                    'Balance Sheet',
-                    'Liabilities vs assets',
-                    () => pushBizScreen(context, const BalanceSheetScreen()),
-                  ),
-                  _Menu(
-                    Icons.table_rows_outlined,
-                    'Trial Balance',
-                    'Every ledger, Dr and Cr',
-                    () => pushBizScreen(context, const TrialBalanceScreen()),
-                  ),
-                  _Menu(
-                    Icons.pending_actions_outlined,
-                    'Outstanding',
-                    'Receivables & payables',
-                    () => pushBizScreen(context, const OutstandingScreen()),
-                  ),
-                  _Menu(
-                    Icons.percent_rounded,
-                    'GST summary',
-                    'Output vs input tax',
-                    () => pushBizScreen(context, const GstSummaryScreen()),
-                  ),
-                ],
-              ),
               BizSectionLabel(
                 'Recent vouchers',
                 trailing: TextButton(
@@ -491,21 +385,7 @@ class _BusinessDashboard extends ConsumerWidget {
     WidgetRef ref,
     BizBook book,
     BizPeriod period,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
-      final safe = book.company.name.replaceAll(RegExp('[^A-Za-z0-9]+'), '-');
-      final file = File('${dir.path}/xpenc-business-$safe-$stamp.csv');
-      await file.writeAsString(book.dayBookCsv(period), flush: true);
-      await ref
-          .read(backupServiceProvider)
-          .share(file, subject: '${book.company.name} — Day Book');
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Couldn’t export: $e')));
-    }
-  }
+  ) => exportDayBookCsv(context, ref, book, period);
 }
 
 Future<void> _showCompanySwitcher(BuildContext context, WidgetRef ref) async {
@@ -717,42 +597,6 @@ class _StatGrid extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _Menu {
-  const _Menu(this.icon, this.label, this.subtitle, this.onTap);
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-}
-
-class _MenuCard extends StatelessWidget {
-  const _MenuCard({required this.items});
-  final List<_Menu> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) Divider(height: 1, indent: 60, color: cs.outline),
-            ListTile(
-              leading: Icon(items[i].icon),
-              title: Text(items[i].label),
-              subtitle: Text(items[i].subtitle),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: items[i].onTap,
-            ),
-          ],
-        ],
       ),
     );
   }

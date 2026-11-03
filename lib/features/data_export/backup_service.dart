@@ -6,8 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../data/database.dart';
-import 'report_pdf.dart';
-import 'statement_pdf.dart';
 
 /// The public folder every backup lives in: `Download/BACKUP XPENC`. Not the
 /// app's own (sandboxed, uninstall-wiped) storage — see [BackupService]'s
@@ -362,116 +360,6 @@ class BackupService {
       const JsonEncoder.withIndent('  ').convert(dump),
       flush: true,
     );
-    return file;
-  }
-
-  /// A bank/cash statement for one account, [start] to [end] inclusive.
-  Future<File> writeAccountStatementPdf({
-    required AccountRow account,
-    required DateTime start,
-    required DateTime end,
-  }) async {
-    final statement = await _db.accountStatement(
-      accountId: account.id,
-      start: start,
-      end: end,
-    );
-    final bytes = await buildAccountStatementPdf(
-      account: account,
-      statement: statement,
-      start: start,
-      end: end,
-    );
-    final dir = await getApplicationDocumentsDirectory();
-    final safeName = account.name
-        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-')
-        .toLowerCase();
-    final file = File(
-      '${dir.path}/xpenc-statement-$safeName-${_stamp(DateTime.now())}.pdf',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
-  }
-
-  /// Every account's transactions for [start] to [end] inclusive, merged
-  /// date-wise — the Accounts screen's "Statement" action.
-  Future<File> writeCombinedStatementPdf({
-    required DateTime start,
-    required DateTime end,
-  }) async {
-    final lines = await _db.combinedStatement(start: start, end: end);
-    final bytes = await buildCombinedStatementPdf(
-      start: start,
-      end: end,
-      lines: lines,
-    );
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${dir.path}/xpenc-combined-statement-${_stamp(DateTime.now())}.pdf',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
-  }
-
-  /// Income & Expense Report for an arbitrary range — whatever period the
-  /// Stats screen is showing (a month or a calendar year).
-  Future<File> writeIncomeExpenseReportPdf({
-    required DateTime start,
-    required DateTime end,
-    required String periodLabel,
-    required String fileSuffix,
-    required Map<int, CategoryRow> categories,
-  }) async {
-    final totals = await _db.reportTotals(start, end);
-    final bytes = await buildIncomeExpenseReportPdf(
-      periodLabel: periodLabel,
-      income: totals.income,
-      expense: totals.expense,
-      expenseByCategory: totals.expenseByCategory,
-      categories: categories,
-    );
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/xpenc-report-$fileSuffix.pdf');
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
-  }
-
-  /// Planned vs. actual for every budgeted category in [month].
-  Future<File> writeBudgetStatementPdf(DateTime month) async {
-    final lines = await _db.budgetStatement(month);
-    final bytes = await buildBudgetStatementPdf(month: month, lines: lines);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${dir.path}/xpenc-budget-statement-${month.year}-'
-      '${_two(month.month)}.pdf',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
-  }
-
-  /// One category's budget line plus every expense in it for [month] — the
-  /// download action on the Budget Detail page.
-  Future<File> writeCategoryStatementPdf({
-    required int categoryId,
-    required DateTime month,
-  }) async {
-    final statement = await _db.categoryStatement(
-      categoryId: categoryId,
-      month: month,
-    );
-    final bytes = await buildCategoryStatementPdf(
-      month: month,
-      statement: statement,
-    );
-    final dir = await getApplicationDocumentsDirectory();
-    final safeName = statement.category.name
-        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-')
-        .toLowerCase();
-    final file = File(
-      '${dir.path}/xpenc-budget-$safeName-${month.year}-'
-      '${_two(month.month)}.pdf',
-    );
-    await file.writeAsBytes(bytes, flush: true);
     return file;
   }
 

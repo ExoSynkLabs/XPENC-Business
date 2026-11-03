@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Release process: see [docs/RELEASING.md](docs/RELEASING.md).
 
+## XPENC Business [1.1.0] — 2026-11-03
+
+XPENC Business is now **only** a business app — the personal XPENC features
+are gone, and everything is arranged around running a business.
+
+### Changed
+- **New navigation: Home · Bookings · ➕ · Reports · More.** The app opens on
+  the business dashboard (or company setup on first run). The Bookings tab
+  is worded for your business type ("Events", "Stays", …) and offers to turn
+  bookings on when they're off. ➕ opens "New booking" first, then every
+  voucher kind. Reports gathers P&L, Balance Sheet, Trial Balance,
+  receivables, payables, GST, Day Book, ledgers, cash & bank and stock with
+  headline figures. More holds the company, business type, parties,
+  ledgers, items, backup, settings and about.
+- Settings keep only currency, theme, passcode/biometric, screenshot
+  blocking and clear-all-data (which now also clears the business books).
+
+### Removed
+- The personal app: personal dashboard, transactions, accounts, budgets,
+  envelope mode, persons (dues), savings goals, shopping lists, payees,
+  calendar & reminders, auto spend, personal stats and statements, tags and
+  categories, personal onboarding, bank-SMS / screenshot share intake and
+  Review Inbox, notifications, and the home-screen widgets.
+- Their dependencies: ML Kit text recognition, notifications, home widgets,
+  share intake, charts, PDF, CSV, swipe lists and timezone — a much smaller
+  APK that asks for no notification or boot permissions.
+
+### Kept
+- The database and backup format are unchanged, so any XPENC or XPENC
+  Business backup still restores.
+
 ## XPENC Business [1.0.0] — 2026-11-03
 
 First release of **XPENC Business** — a separate app (`com.yash.xpenc.business`)

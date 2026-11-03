@@ -1,111 +1,62 @@
 
 <div align="center">
 
-<img src="branding/xpenc_banner.svg" width="720" alt="XPENC — Money, tracked honestly.">
+# XPENC Business
 
-<br><br>
+**Tally-style books and bookings for your business — on your phone, offline.**
 
-
-[![F-Droid](https://img.shields.io/f-droid/v/com.yash.xpenc?label=F-Droid&logo=fdroid&logoColor=white&color=white&labelColor=black)](https://f-droid.org/packages/com.yash.xpenc/)
-[![Release](https://img.shields.io/github/v/release/PATILYASHH/XPENC?label=release&color=white&labelColor=black)](https://github.com/PATILYASHH/XPENC/releases/latest)
-[![CI](https://github.com/PATILYASHH/XPENC/actions/workflows/ci.yml/badge.svg)](https://github.com/PATILYASHH/XPENC/actions/workflows/ci.yml)
-[![Release APK](https://github.com/PATILYASHH/XPENC/actions/workflows/release.yml/badge.svg)](https://github.com/PATILYASHH/XPENC/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/GeabNet/XPENC-Business?label=release&color=white&labelColor=black)](https://github.com/GeabNet/XPENC-Business/releases/latest)
+[![Release APK](https://github.com/GeabNet/XPENC-Business/actions/workflows/release.yml/badge.svg)](https://github.com/GeabNet/XPENC-Business/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white?labelColor=black)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.38.9-02569B?logo=flutter&logoColor=white&labelColor=black)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white&labelColor=black)](https://github.com/PATILYASHH/XPENC/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/PATILYASHH/XPENC/total?color=white&labelColor=black)](https://github.com/PATILYASHH/XPENC/releases)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-34c77b?labelColor=black)](CONTRIBUTING.md)
-[![Sponsor](https://img.shields.io/badge/Sponsor-PATILYASHH-ea4aaa?logo=githubsponsors&logoColor=white&labelColor=black)](https://github.com/sponsors/PATILYASHH)
+[![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white&labelColor=black)](https://github.com/GeabNet/XPENC-Business/releases/latest)
 
-**Offline-first personal finance for Android.**
-Income, expenses, transfers, budgets and dues —
-everything lives in a local SQLite database on your phone. Nothing is ever uploaded.
+Capital, loans, purchases, sales with GST, expenses and income as real double-entry
+vouchers — plus bookings for halls, screens, rooms, chairs, courts and rentals.
+Everything lives in a local SQLite database on your phone. Nothing is ever uploaded.
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="70">](https://f-droid.org/packages/com.yash.xpenc/)
-
-[**🌐 Website**](https://getxpenc.vercel.app) · [**⬇️ Download APK**](https://github.com/PATILYASHH/XPENC/releases/latest) · [**🐛 Report a bug**](../../issues/new?template=bug_report.yml) · [**✨ Request a feature**](../../issues/new?template=feature_request.yml) · [**🏦 Add your bank**](../../issues/new?template=bank_support.yml)
+[**⬇️ Download APK**](https://github.com/GeabNet/XPENC-Business/releases/latest) · [**🐛 Report a bug**](../../issues/new?template=bug_report.yml) · [**✨ Request a feature**](../../issues/new?template=feature_request.yml)
 
 </div>
 
 ---
 
-## Why it exists
-
-Most expense apps quietly lie to you. They blur *where money sits* with *what it
-was for*, count a transfer between your own accounts as income, or double-count
-a UPI payment because the bank sent two SMS. XPENC treats the ledger as the
-single source of truth and enforces one invariant everywhere:
-
-> **Net worth = the sum of all account balances.** A transfer leaves it
-> unchanged, income raises it, expense lowers it. If the numbers ever disobey
-> that, it's a bug.
-
-Amounts are integer **paise**, never doubles — floats corrupt money math.
-Lending is not spending, and being repaid is not earning, so person movements
-are excluded from budgets and income/expense reports.
-
-📐 The complete design doc — mental model, data model, every decision and the
-adversarial audit that hardened it — is in [structure.md](structure.md).
+XPENC Business is a separate app built from [XPENC](https://github.com/PATILYASHH/XPENC)'s
+engine. XPENC is for personal money; XPENC Business is only for running a business. It
+has its own app ID (`com.yash.xpenc.business`), so both can sit on one phone.
 
 ## Features
 
 | | |
 |---|---|
-| 🏪 **Business Books (Tally-style)** | A separate double-entry book for your shop or firm: record **capital invested, drawings, loans taken/repaid/given, investments, assets, purchases, sales with GST, returns, expenses and income** from plain-language forms — no Dr/Cr knowledge needed. Get **Day Book, Ledgers, Profit & Loss, Balance Sheet, Trial Balance, Outstanding, GST summary and Stock** on your phone, for several companies, with CSV export for your accountant. |
-| 📅 **Bookings, personalised by business type** | Turn on Bookings per company and pick a type — **wedding hall / venue, movie theatre, hotel, salon / clinic, rentals, turf** or your own. Each brings its own words, bookable resources (Main Hall · Dining Hall · Lawn, Screen 1 · 2, rooms…), sessions or show times and form fields (guests, food, decoration, movie, seats, meal plan…), all editable. A date strip shows what's free and booked; double-booking is blocked (seats sell up to capacity); advances post as Receipts and the bill as a Sale, so bookings and the books always agree. Share a booking slip on WhatsApp. |
-| 💳 **Honest accounts** | Cash / Bank / Card / Prepaid balance (fob, gift or transit card) with real balances. Debit cards & UPI are *linked instruments* — they spend their bank's money, so rupees are never counted twice. Credit cards carry their own (negative = owed) balance. |
-| 🔁 **Income · Expense · Transfer** | Three transaction types, kept strictly apart. Transfers never pollute budgets or reports. |
-| 🎯 **Budgets** | Per-category with period windows, live progress, once-per-period alerts at 80% and overspend, and a subcategory cap that can never exceed its parent's. |
-| 📮 **Envelope Mode** | Opt-in per account: "every rupee has a job." Assign money from Ready to Assign into a category before you can spend it — a real value container, not just a ceiling. |
-| 🏷️ **Tags & receipts** | Free-form tags beyond category, plus a photo receipt attached to any transaction — both one tap away in the app bar while adding a transaction. |
-| 🐷 **Savings goals** | Save toward a target amount with running progress and a contribution history. |
-| 🛍️ **Shopping lists** | Named, colour-coded lists, not one flat list. |
-| 🔒 **Passcode lock** | An optional PIN gate on app open, with biometric unlock (fingerprint/face) on top. |
-| 📱 **Home screen widget** | Net worth at a glance on the Android home screen, live-updated with the ledger. |
-| 📩 **Share it in — SMS or screenshot** | Share a bank SMS, or a Paytm/Google Pay/PhonePe payment screenshot, straight from your bank app. Read entirely on-device (no `READ_SMS` permission, no network call) and parsed into the Review Inbox — the same pipeline (dedupe · review cards · Auto-Approve with real Undo) either way. |
-| 👥 **Persons — dues & loans** | They-owe / I-owe with running balances, partial settlements, optional real account movement, editable ledger entries. |
-| 📅 **Calendar & cash reminders** | Day-wise in/out grid; EMI/bill reminders that post *nothing* until you confirm. |
-| 📊 **Insights** | Category pie, income vs expense, net-worth trend, per-account reports, and a downloadable Income & Expense PDF report — one chart engine, many views. |
-| 💾 **Backup & export** | Symmetric JSON backup/restore + CSV shaped for accountants / Tally. Backups land in the public `Download/BACKUP XPENC` folder so they survive an uninstall, with an optional automatic schedule and retention. |
-| 🎨 **Six themes** | Material 3, One UI–inspired. True-black AMOLED dark, a violet "Colourful", a navy "Midnight", and Cove — a One UI 9–inspired look with an ocean-blue accent and bigger, softer rounded cards. |
+| 🏪 **Tally-style books** | Double entry under Tally's groups — Capital, Loans, Sundry Debtors/Creditors, Duties & Taxes, Fixed Assets, Investments, Bank, Cash, Sales, Purchase, Direct/Indirect Income & Expense. Every voucher's debits equal its credits. |
+| ✍️ **Plain-language entries** | Capital invested, drawings, loan taken / repaid / given / recovered, investment made / redeemed, asset bought, sale, purchase, returns, income, expense, receive / make payment, cash ↔ bank, journal — no Dr/Cr knowledge needed. |
+| 🧾 **Bills with GST & stock** | Sales and purchase bills with items or a plain amount and a GST rate (0–28%) posted to Output/Input GST. Stock quantities update from bills; stock is valued automatically at weighted-average cost. |
+| 📊 **Reports** | Day Book, ledger statements, Trial Balance, Profit & Loss, Balance Sheet, receivables & payables, GST summary, stock summary — by financial year, month or any range. Day Book exports to CSV. |
+| 📅 **Bookings, personalised by business type** | Wedding hall / venue, movie theatre, hotel, salon / clinic, rentals, turf or your own: your halls / screens / rooms, sessions or show times and form fields. See what's free each day, register customers with their requirements, stop double-bookings (seats sell up to capacity). Advances post as Receipts and the bill as a Sale. Share a booking slip. |
+| 🏢 **Several companies** | Keep more than one business side by side and switch in one tap. |
+| 🔒 **Private by design** | Offline, no account, no server. Optional passcode with biometric unlock, block screenshots, hide amounts. |
+| 💾 **Backup & restore** | One JSON backup of everything, saved to `Download/BACKUP XPENC` so it survives an uninstall, with an optional automatic schedule. |
 
 ## Download
 
-### F-Droid — recommended
-
-[**f-droid.org/packages/com.yash.xpenc**](https://f-droid.org/packages/com.yash.xpenc/)
-
-You get automatic updates, and F-Droid builds the app **from this source tree
-themselves** — nobody has to trust a binary I uploaded. The right ABI is picked
-for your phone automatically.
-
-### Direct APK
-
-Or grab it from [**Releases**](https://github.com/PATILYASHH/XPENC/releases/latest)
-/ the [website](https://getxpenc.vercel.app#download):
+Grab it from [**Releases**](https://github.com/GeabNet/XPENC-Business/releases/latest):
 
 | Your phone | Asset |
 |---|---|
-| Most phones (~2017+) | [`xpenc-arm64-v8a.apk`](https://github.com/PATILYASHH/XPENC/releases/latest/download/xpenc-arm64-v8a.apk) |
-| Older 32-bit phones | [`xpenc-armeabi-v7a.apk`](https://github.com/PATILYASHH/XPENC/releases/latest/download/xpenc-armeabi-v7a.apk) |
-| Emulators | [`xpenc-x86_64.apk`](https://github.com/PATILYASHH/XPENC/releases/latest/download/xpenc-x86_64.apk) |
+| Most phones (~2017+) | [`xpenc-business-arm64-v8a.apk`](https://github.com/GeabNet/XPENC-Business/releases/latest/download/xpenc-business-arm64-v8a.apk) |
+| Older 32-bit phones | [`xpenc-business-armeabi-v7a.apk`](https://github.com/GeabNet/XPENC-Business/releases/latest/download/xpenc-business-armeabi-v7a.apk) |
+| Emulators | [`xpenc-business-x86_64.apk`](https://github.com/GeabNet/XPENC-Business/releases/latest/download/xpenc-business-x86_64.apk) |
 
-Every release ships `SHA256SUMS.txt` — verify your download. APKs are built,
-tested and gated by [GitHub Actions](.github/workflows/release.yml); the
-[release process](docs/RELEASING.md) is fully automated from a version tag.
-
-> **Switching between F-Droid and a direct APK?** They're signed with different
-> keys, so Android won't update one over the other. Migrate with
-> **Backup → export JSON**, uninstall, install from the new source, then restore.
+Every release ships `SHA256SUMS.txt` — verify your download. APKs are built, tested
+and published by [GitHub Actions](.github/workflows/release.yml) from a `v*` tag
+(or a manual run of that workflow).
 
 ## Privacy
 
-Everything is stored on-device in the app's private SQLite database. Since
-1.1.0 the app requests **no SMS permission at all** — the only runtime
-permission is notifications. No transaction or balance ever leaves the phone.
-**There is no server.**
-Full policy: [PRIVACY.md](PRIVACY.md) · live at [getxpenc.vercel.app/privacy](https://getxpenc.vercel.app/privacy).
-See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
+Everything is stored on-device in the app's private SQLite database. The app asks
+for **no runtime permissions** — no SMS, no notifications, no contacts, no location.
+**There is no server.** See [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
 ## Tech stack
 

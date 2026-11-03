@@ -12,8 +12,6 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/error_view.dart';
 import 'core/widgets/money_text.dart';
 import 'data/providers.dart';
-import 'features/message_capture/parser/bank_message.dart';
-import 'features/message_capture/share_intake.dart';
 import 'features/security/lock_screen.dart';
 
 class XpencApp extends ConsumerStatefulWidget {
@@ -45,7 +43,6 @@ class _XpencAppState extends ConsumerState<XpencApp>
   }
 
   Future<void> _onStart() async {
-    // If the database can't open there is nothing to notify about or scan for.
     final ready = await ref.read(databaseReadyProvider.future).catchError((_) {
       return false;
     });
@@ -54,73 +51,13 @@ class _XpencAppState extends ConsumerState<XpencApp>
     // Associate the backup folder right away rather than the first time
     // something is actually backed up — see `BackupService.ensureBackupFolderReady`.
     unawaited(ref.read(backupServiceProvider).ensureBackupFolderReady());
-
-    await _gateOnboarding();
-    if (!mounted) return;
-
-    final homeWidget = ref.read(homeWidgetServiceProvider);
-    homeWidget.init();
-    ref.read(shareIntakeServiceProvider).init(_handleShareResult);
-    final netWorth = await ref.read(netWorthProvider.future).catchError((_) {
-      return const Money.zero();
-    });
-    if (!mounted) return;
-    await homeWidget.updateBalance(netWorth);
-    await homeWidget.updateBudgetSummary(ref.read(widgetBudgetSummaryProvider));
-
-    final notifications = ref.read(notificationServiceProvider);
-    await notifications.init();
-    await notifications.syncReminders();
-    await notifications.syncExpenseReminder();
-    await notifications.syncQuickAddNotification();
-
-    // `checkBudgets` no-ops before `init()` completes (it must not claim an
-    // alert it cannot deliver). The ledger listener may already have fired by
-    // now, so run it once here — the claim table keeps it to one alert.
-    await notifications.checkBudgets();
-
-    await _runRecurring();
-    await _scanMessages();
     await _runAutoBackup();
   }
 
-  /// Posts anything due, then reschedules the "coming up" alerts against
-  /// whatever `nextDueDate` each rule now has. There is no background
-  /// service — like message capture, this only ever runs while the app is
-  /// open, so it also runs again on every resume, not just cold start.
-  Future<void> _runRecurring() async {
-    final posted = await ref.read(dbProvider).runDueRecurringRules();
-    if (!mounted) return;
-    final notifications = ref.read(notificationServiceProvider);
-    await notifications.syncRecurringNotifications();
-    if (posted > 0) await notifications.notifyAutoPosted(posted);
-  }
-
-  /// Send a first-time user through onboarding before anything else.
-  Future<void> _gateOnboarding() async {
-    try {
-      final settings = await ref.read(dbProvider).getSettings();
-      if (!settings.onboarded && mounted) {
-        appRouter.go('/onboarding');
-      }
-    } catch (_) {
-      // A settings read failure is already surfaced by databaseReadyProvider.
-    }
-  }
-
-  /// The spec is "when the user opens the app, they see cards". So we scan on
-  /// resume rather than running a background receiver.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _runRecurring();
-      _scanMessages();
-      _runAutoBackup();
-      // Restores the shortcut if the system cleared it under memory
-      // pressure while `ongoing: true` normally keeps a swipe from doing so.
-      ref.read(notificationServiceProvider).syncQuickAddNotification();
-    }
-    // Immediate re-lock, no grace period — the safer default for a finance
+    if (state == AppLifecycleState.resumed) _runAutoBackup();
+    // Immediate re-lock, no grace period — the safer default for a money
     // app. `_passcodeKnown` guards a launch race: if the very first
     // backgrounding somehow lands before the initial settings read, there is
     // nothing yet to decide with.
@@ -131,82 +68,17 @@ class _XpencAppState extends ConsumerState<XpencApp>
     }
   }
 
-  /// One-time move of pre-existing backups into the new durable folder, then
-  /// a due-backup check. Like recurring rules and message capture, there is
-  /// no background service — this only ever runs while the app is open, so
-  /// it also runs again on every resume, not just cold start.
+  /// One-time move of pre-existing backups into the durable folder, then a
+  /// due-backup check. There is no background service; this only runs while
+  /// the app is open.
   Future<void> _runAutoBackup() async {
     final service = ref.read(backupServiceProvider);
     await service.migrateLegacyBackups();
     await service.runAutoBackupIfDue();
   }
 
-  Future<void> _scanMessages() async {
-    final result = await ref.read(captureServiceProvider).scan();
-    if (!result.didRun) return;
-
-    // Only ping about cards that still need the user. Auto-filled ones already
-    // posted and are visible on the dashboard.
-    final needsReview = result.ingested - result.autoFilled;
-    if (needsReview > 0) {
-      await ref.read(notificationServiceProvider).notifyDetected(needsReview);
-    }
-  }
-
-  /// The user just shared a message into XPENC from another app — see
-  /// `ShareIntakeService`. Ingested lands straight in the Review Inbox,
-  /// since that is exactly where "filter it and add as expense or income"
-  /// already happens; anything else gets a plain-language reason instead of
-  /// silently doing nothing with a message the user deliberately picked.
-  void _handleShareResult(ShareIntakeResult result) {
-    switch (result) {
-      case ShareIntakeIngested():
-        appRouter.go('/inbox');
-      case ShareIntakeDuplicate():
-        showAppSnackBar('Already in your Review Inbox');
-      case ShareIntakeRejected(:final reason, :final recognizedText):
-        showAppSnackBar(
-          "Couldn't find a transaction in that message"
-          '${_rejectReasonHint(reason)}',
-          action: recognizedText == null
-              ? null
-              : SnackBarAction(
-                  label: 'View text',
-                  onPressed: () => showRecognizedTextDialog(recognizedText),
-                ),
-        );
-    }
-  }
-
-  String _rejectReasonHint(RejectReason reason) => switch (reason) {
-    RejectReason.otp => ' — looks like an OTP.',
-    RejectReason.promotional => ' — looks promotional.',
-    RejectReason.balanceOnly => ' — no transaction, just a balance.',
-    RejectReason.declined => ' — the payment was declined.',
-    RejectReason.noAmount => ' — no amount found.',
-    RejectReason.noDirection || RejectReason.notATransaction => '.',
-  };
-
   @override
   Widget build(BuildContext context) {
-    // Budgets are re-checked whenever the ledger changes. `claimBudgetAlert`
-    // makes each alert fire at most once per category, per period, per level.
-    ref.listen(allTransactionsProvider, (_, next) {
-      if (next.hasValue) {
-        ref.read(notificationServiceProvider).checkBudgets();
-      }
-    });
-    // Keeps the home-screen widgets live while the app is open — neither
-    // has any other way to learn the ledger (or budgets) changed.
-    ref.listen(netWorthProvider, (_, next) {
-      if (next.hasValue) {
-        ref.read(homeWidgetServiceProvider).updateBalance(next.value!);
-      }
-    });
-    ref.listen(widgetBudgetSummaryProvider, (_, next) {
-      ref.read(homeWidgetServiceProvider).updateBudgetSummary(next);
-    });
-
     final ready = ref.watch(databaseReadyProvider);
     final preset = ref.watch(themePresetProvider);
 

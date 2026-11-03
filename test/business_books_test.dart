@@ -357,6 +357,15 @@ void main() {
     expect(await db.activeBizCompany(), isNull);
   });
 
+  test('clear all data wipes the business books too', () async {
+    final cash = await key(BizSystemKey.cash);
+    final capital = await key(BizSystemKey.capital);
+    await simple(BizEntryKind.capitalIn, capital, cash, rs(1));
+    await db.clearAllData();
+    expect(await db.activeBizCompany(), isNull);
+    expect(await db.loadBizBook(co), isNull);
+  });
+
   test('financial year period starts in April', () {
     final p = BizPeriod.financialYear(DateTime(2027, 2, 10), 4);
     expect(p.from, DateTime(2026, 4, 1));

@@ -7,10 +7,13 @@ import 'package:xpenc/core/theme/app_theme.dart';
 import 'package:xpenc/core/theme/theme_preset.dart';
 import 'package:xpenc/data/database.dart';
 import 'package:xpenc/data/providers.dart';
-import 'package:xpenc/data/tables.dart';
 import 'package:xpenc/features/settings/settings_screen.dart';
 import 'package:xpenc/features/settings/theme_picker_sheet.dart';
-import 'package:xpenc/features/transactions/transactions_screen.dart';
+import 'package:xpenc/data/business_tables.dart';
+import 'package:xpenc/features/business/biz_book.dart';
+import 'package:xpenc/features/business/biz_posting.dart';
+import 'package:xpenc/features/business/biz_repository.dart';
+import 'package:xpenc/features/business/day_book_screen.dart';
 
 void main() {
   group('ThemePreset', () {
@@ -239,30 +242,37 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('a transaction card survives a long name, note and amount', (
+    testWidgets('a voucher row survives a long name, narration and amount', (
       tester,
     ) async {
       await tester.runAsync(() async {
-        final cash = (await db.watchAccounts().first)
-            .firstWhere((a) => a.type == AccountType.cash)
-            .id;
-        final cat = (await db.watchCategories(CategoryKind.expense).first)
-            .firstWhere((c) => c.name == 'Entertainment')
-            .id;
-        await db.addTransaction(
-          type: TxType.expense,
-          // A crore, to push the trailing column as wide as it can go.
-          amount: Money.fromRupees(12345678),
-          accountId: cash,
-          categoryId: cat,
-          date: DateTime.now(),
-          note: 'A deliberately long note about a very long evening out',
+        final co = await db.createBizCompany(name: 'Patil Traders');
+        final party = await db.createBizLedger(
+          companyId: co,
+          name: 'Shree Mahalaxmi Wholesale Grain & Provision Merchants',
+          group: BizGroup.sundryDebtors,
+        );
+        final sales = (await db.loadBizBook(
+          co,
+        ))!.ledgerByKey(BizSystemKey.sales)!.id;
+        await db.saveBizVoucher(
+          BizVoucherDraft(
+            companyId: co,
+            type: BizVoucherType.sales,
+            date: DateTime.now(),
+            narration: 'A deliberately long narration about a very large order',
+            lines: [
+              // A crore, to push the trailing column as wide as it can go.
+              BizLineDraft.dr(party, Money.fromRupees(12345678)),
+              BizLineDraft.cr(sales, Money.fromRupees(12345678)),
+            ],
+          ),
         );
       });
 
-      await pump(tester, const TransactionsScreen());
+      await pump(tester, const DayBookScreen());
       expect(tester.takeException(), isNull);
-      expect(find.text('Entertainment'), findsWidgets);
+      expect(find.textContaining('Shree Mahalaxmi'), findsWidgets);
       await unmount(tester);
     });
   });

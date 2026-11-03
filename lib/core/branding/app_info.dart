@@ -15,7 +15,7 @@ class AppInfo {
   /// The heavy all-caps brand wordmark — the short mark, so it fits wherever
   /// the logo is drawn.
   static const shortName = 'XPENC';
-  static const tagline = 'Money, tracked honestly.';
+  static const tagline = 'Your business books, in your pocket.';
 
   /// Shown under the wordmark on the About screen.
   static const description =
@@ -24,8 +24,8 @@ class AppInfo {
       'uploaded.';
 
   // ── Version ────────────────────────────────────────────────────────────────
-  static const version = '1.0.0';
-  static const buildNumber = 1;
+  static const version = '1.1.0';
+  static const buildNumber = 2;
 
   /// `1.0.0 (build 1)` — the string a bug report should quote.
   static const versionLabel = '$version (build $buildNumber)';

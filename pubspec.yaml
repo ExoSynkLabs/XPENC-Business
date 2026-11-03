@@ -20,7 +20,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # `AppInfo.version` / `AppInfo.buildNumber` mirror this line so the About screen
 # can show it without pulling in a platform plugin. `test/branding_test.dart`
 # parses this file and fails if the two ever disagree.
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.10.8
@@ -43,10 +43,6 @@ dependencies:
   drift_flutter: 0.2.8
   go_router: ^17.3.0
   intl: ^0.20.3
-  fl_chart: ^1.2.0
-  flutter_local_notifications: ^22.0.1
-  timezone: ^0.11.1
-  flutter_slidable: ^4.0.3
   sqlite3_flutter_libs: 0.5.24
   path_provider: ^2.1.6
   # Pinned below 13 so it shares win32 ^5 with file_picker (13 needs win32 ^6).
@@ -55,38 +51,15 @@ dependencies:
   file_picker: ^8.1.6
   # Opens the developer's GitHub / LinkedIn from the About screen.
   url_launcher: ^6.3.2
-  # Builds account/budget statement PDFs, entirely on-device — no network font
-  # fetch, so statements stick to plain ASCII text (see statement_pdf.dart).
-  pdf: ^3.11.3
   # Biometric unlock for the passcode lock screen (Settings > Security).
   local_auth: ^3.0.2
   # Hashes the passcode before it ever touches disk — never stored in plain
   # text (see core/security/passcode.dart).
   crypto: ^3.0.7
-  # Bridges data to the Android home-screen widget (see android/…/widget) and
-  # routes a tap on it back into the app.
-  home_widget: ^0.9.3
   # Writes backups to the public Download/BACKUP XPENC folder via MediaStore —
   # no storage permission needed, and survives the app being uninstalled
   # (see backup_service.dart).
   media_store_plus: ^0.1.3
-  # Lets a user Share a bank SMS from any app straight into XPENC — a
-  # Play-compliant path into message capture, needing no READ_SMS permission
-  # at all (see message_capture/share_intake.dart and GitHub #26).
-  # Pinned below 1.9.0: that release bumped its own compileSdk to 37, an
-  # Android preview-only platform build tooling can't reliably resolve.
-  # 1.8.1's public API is byte-for-byte identical (compileSdk 34).
-  receive_sharing_intent: 1.8.1
-  # Parses a bank-exported statement for CSV import (see
-  # data_export/csv_import_screen.dart and GitHub #17).
-  csv: ^8.0.0
-  # On-device text recognition for shared payment screenshots (PhonePe/GPay/
-  # Paytm "payment successful" screens) — see
-  # message_capture/ocr_service.dart and GitHub #25. Uses ML Kit's *bundled*
-  # model (statically linked at build time), not the Play-Services-backed
-  # "unbundled" variant: no Google Play Services dependency at runtime, no
-  # extra Android permission, fully offline immediately after install.
-  google_mlkit_text_recognition: ^0.15.0
 
 dev_dependencies:
   flutter_test:
