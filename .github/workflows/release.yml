@@ -1,6 +1,8 @@
 # Publishes XPENC Business.
 #
-# Push a tag like `v1.2.0` and this workflow will:
+# Push a tag like `v1.2.0` — or run it by hand from the Actions tab, which
+# releases the branch's HEAD as `v<pubspec version>` and creates that tag —
+# and this workflow will:
 #   1. check the tag matches the version in pubspec.yaml
 #   2. run the full test suite
 #   3. build release APKs (one per ABI)
@@ -38,6 +40,16 @@ jobs:
             echo "::error::Tag v$TAG does not match pubspec.yaml version $PUBSPEC."
             echo "Bump pubspec.yaml (and AppInfo — test/branding_test.dart guards it) before tagging."
             exit 1
+          fi
+
+      - name: Release tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            V="$(grep -E '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1 | tr -d '[:space:]')"
+            echo "name=v$V" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install sqlite3
@@ -125,7 +137,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "XPENC Business ${{ github.ref_name }}"
+          tag_name: ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          name: "XPENC Business ${{ steps.tag.outputs.name }}"
           files: |
             release/xpenc-business-arm64-v8a.apk
             release/xpenc-business-armeabi-v7a.apk
@@ -158,4 +172,4 @@ jobs:
 
             Verify your download against `SHA256SUMS.txt`.
             ${{ steps.signing.outputs.note }}
-            Full history in [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md).
+            Full history in [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ steps.tag.outputs.name }}/CHANGELOG.md).
